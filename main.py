@@ -19,7 +19,7 @@ def main():
         QMessageBox.critical(None, "ticketure", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
         sys.exit(1)
 
-    monitor_thread = None
+    monitor_thread: MonitorThread | None = None
 
     def on_start():
         nonlocal monitor_thread
@@ -31,10 +31,11 @@ def main():
             launcher.reset()
             return
 
-        monitor_thread = MonitorThread(region)
-        monitor_thread.motion_detected.connect(on_motion)
-        monitor_thread.stopped.connect(on_stopped)
-        monitor_thread.start()
+        thread = MonitorThread(region)
+        thread.motion_detected.connect(on_motion)
+        thread.stopped.connect(on_stopped)
+        thread.start()
+        monitor_thread = thread
 
         launcher.hide()
         tray.show()
