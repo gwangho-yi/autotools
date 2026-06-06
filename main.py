@@ -1,5 +1,5 @@
 import sys
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QCursor
 
 from ui.launcher import Launcher
@@ -13,7 +13,12 @@ def main():
     app.setQuitOnLastWindowClosed(False)
 
     launcher = Launcher()
-    tray = TrayIcon()
+    try:
+        tray = TrayIcon()
+    except RuntimeError as e:
+        QMessageBox.critical(None, "ticketure", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
+        sys.exit(1)
+
     monitor_thread = None
 
     def on_start():
@@ -50,6 +55,7 @@ def main():
     launcher.start_requested.connect(on_start)
     tray.stop_requested.connect(on_stop)
     tray.open_requested.connect(on_open)
+    app.aboutToQuit.connect(on_stop)
 
     launcher.show()
     sys.exit(app.exec())
