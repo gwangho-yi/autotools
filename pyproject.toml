@@ -1,0 +1,10 @@
+[project]
+name = "ticketure"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "mss>=10.2.0",
+    "numpy>=2.4.6",
+    "pyside6>=6.11.1",
+]

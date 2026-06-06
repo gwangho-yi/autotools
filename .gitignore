@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# OMC / Claude
+.omc/
+.claude/
+
+# Build artifacts
+dist/
+build/
+*.spec
