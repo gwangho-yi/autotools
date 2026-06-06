@@ -17,4 +17,5 @@ dist/
 build/
 *.spec
 !ticketure.spec
+!ticketure-windows.spec
 assets/icon.iconset/
