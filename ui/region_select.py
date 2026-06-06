@@ -5,12 +5,12 @@ from PySide6.QtGui import QPainter, QColor, QPen, QGuiApplication
 
 
 class RegionSelector(QWidget):
-    def __init__(self):
+    def __init__(self, screen, shared):
         super().__init__()
+        self._screen = screen
+        self._shared = shared  # {'result': None, 'loop': None, 'widgets': []}
         self.start = None
         self.end = None
-        self.selected_region = None
-        self._loop = None  # set by select_region()
 
         self.setWindowFlags(
             Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
@@ -18,15 +18,12 @@ class RegionSelector(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setCursor(Qt.CrossCursor)
 
-        screens = QGuiApplication.screens()
-        if not screens:
-            self.close()
-            return
-        virtual_rect = screens[0].geometry()
-        for screen in screens[1:]:
-            virtual_rect = virtual_rect.united(screen.geometry())
-        self.setGeometry(virtual_rect)
+        # show() 먼저 호출해야 windowHandle()이 생성됨
         self.show()
+        handle = self.windowHandle()
+        if handle:
+            handle.setScreen(screen)
+        self.setGeometry(screen.geometry())
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -50,33 +47,45 @@ class RegionSelector(QWidget):
 
     def mouseReleaseEvent(self, event):
         rect = QRect(self.start, event.position().toPoint()).normalized()
-        self.selected_region = {
-            "left": rect.x(),
-            "top": rect.y(),
+        # 로컬 좌표 → 글로벌 좌표 변환 (스크린 원점 더하기)
+        origin = self._screen.geometry().topLeft()
+        self._shared['result'] = {
+            "left": rect.x() + origin.x(),
+            "top": rect.y() + origin.y(),
             "width": rect.width(),
             "height": rect.height(),
         }
-        self.close()
-        if self._loop:
-            self._loop.quit()
+        self._close_all()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
-            self.selected_region = None
-            self.close()
-            if self._loop:
-                self._loop.quit()
+            self._shared['result'] = None
+            self._close_all()
+
+    def _close_all(self):
+        for w in self._shared['widgets']:
+            w.close()
+        if self._shared['loop']:
+            self._shared['loop'].quit()
 
 
 def select_region():
     app = QApplication.instance() or QApplication(sys.argv)
+    screens = QGuiApplication.screens()
+    if not screens:
+        return None
+
     loop = QEventLoop()
-    selector = RegionSelector()
-    selector._loop = loop
+    shared = {'result': None, 'loop': loop, 'widgets': []}
+
+    for screen in screens:
+        selector = RegionSelector(screen, shared)
+        shared['widgets'].append(selector)
+
     loop.exec()
-    return selector.selected_region
+    return shared['result']
 
 
 if __name__ == "__main__":
     region = select_region()
-    print("선택한 영역(물리 픽셀):", region)
+    print("선택한 영역:", region)
