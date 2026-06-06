@@ -1,7 +1,6 @@
-import sys
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QApplication
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QGuiApplication, QPainter, QColor, QPen, QPixmap, QIcon
+from PySide6.QtGui import QGuiApplication, QPainter, QColor, QPen, QPixmap
 
 
 def make_icon_pixmap(size: int) -> QPixmap:
@@ -101,7 +100,10 @@ class Launcher(QWidget):
         layout.addWidget(self.status_label)
 
     def _center(self):
-        geo = QGuiApplication.primaryScreen().availableGeometry()
+        screen = QGuiApplication.primaryScreen()
+        if screen is None:
+            return
+        geo = screen.availableGeometry()
         self.move(
             geo.center().x() - self.width() // 2,
             geo.center().y() - self.height() // 2,
