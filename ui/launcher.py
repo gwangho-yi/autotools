@@ -43,6 +43,7 @@ def make_icon_pixmap(size: int) -> QPixmap:
 
 class Launcher(QWidget):
     start_requested = Signal()
+    stop_requested = Signal()
 
     def __init__(self):
         super().__init__()
@@ -114,8 +115,46 @@ class Launcher(QWidget):
         self.status_label.setText("영역을 선택하세요...")
         self.start_requested.emit()
 
+    def _on_stop(self):
+        self.stop_requested.emit()
+
+    def set_monitoring(self, active: bool) -> None:
+        self.start_btn.clicked.disconnect()
+        if active:
+            self.start_btn.setText("중지")
+            self.start_btn.setEnabled(True)
+            self.start_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #e05555;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: bold;
+                }
+                QPushButton:hover { background-color: #c04444; }
+            """)
+            self.start_btn.clicked.connect(self._on_stop)
+            self.status_label.setText("모니터링 중...")
+        else:
+            self.start_btn.setText("시작")
+            self.start_btn.setEnabled(True)
+            self.start_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #4ecca3;
+                    color: #1a1a2e;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: bold;
+                }
+                QPushButton:hover { background-color: #3db89a; }
+                QPushButton:disabled { background-color: #2a4a3e; color: #555; }
+            """)
+            self.start_btn.clicked.connect(self._on_start)
+            self.status_label.setText("")
+
     def reset(self):
-        self.start_btn.setEnabled(True)
-        self.status_label.setText("")
+        self.set_monitoring(False)
         self.show()
         self.raise_()

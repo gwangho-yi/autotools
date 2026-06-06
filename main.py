@@ -37,6 +37,7 @@ def main():
         thread.start()
         monitor_thread = thread
 
+        launcher.set_monitoring(True)
         launcher.hide()
         tray.show()
         tray.set_status("모니터링 중...")
@@ -58,6 +59,7 @@ def main():
         launcher.raise_()
 
     launcher.start_requested.connect(on_start)
+    launcher.stop_requested.connect(on_stop)
     tray.stop_requested.connect(on_stop)
     tray.open_requested.connect(on_open)
     app.aboutToQuit.connect(on_stop)
