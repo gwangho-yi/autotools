@@ -18,7 +18,11 @@ class RegionSelector(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setCursor(Qt.CrossCursor)
 
-        geo = QGuiApplication.primaryScreen().geometry()
+        screen = QGuiApplication.primaryScreen()
+        if screen is None:
+            self.close()
+            return
+        geo = screen.geometry()
         self.setGeometry(geo)
         self.show()
 

@@ -22,12 +22,15 @@ def main():
     monitor_thread = None
 
     def on_start():
+        nonlocal monitor_thread
+        if monitor_thread and monitor_thread.isRunning():
+            return
+
         region = select_region()
-        if not region:
+        if not region or region["width"] < 8 or region["height"] < 8:
             launcher.reset()
             return
 
-        nonlocal monitor_thread
         monitor_thread = MonitorThread(region)
         monitor_thread.motion_detected.connect(on_motion)
         monitor_thread.stopped.connect(on_stopped)
@@ -35,6 +38,7 @@ def main():
 
         launcher.hide()
         tray.show()
+        tray.set_status("모니터링 중...")
 
     def on_motion(x, y):
         QCursor.setPos(x, y)
