@@ -17,3 +17,4 @@ dist/
 build/
 *.spec
 !ticketure.spec
+assets/icon.iconset/
