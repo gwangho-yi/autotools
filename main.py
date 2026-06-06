@@ -65,6 +65,8 @@ def main():
     app.aboutToQuit.connect(on_stop)
 
     launcher.show()
+    launcher.raise_()
+    launcher.activateWindow()
     sys.exit(app.exec())
 
 
