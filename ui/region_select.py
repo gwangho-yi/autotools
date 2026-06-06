@@ -18,12 +18,14 @@ class RegionSelector(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setCursor(Qt.CrossCursor)
 
-        screen = QGuiApplication.primaryScreen()
-        if screen is None:
+        screens = QGuiApplication.screens()
+        if not screens:
             self.close()
             return
-        geo = screen.geometry()
-        self.setGeometry(geo)
+        virtual_rect = screens[0].geometry()
+        for screen in screens[1:]:
+            virtual_rect = virtual_rect.united(screen.geometry())
+        self.setGeometry(virtual_rect)
         self.show()
 
     def paintEvent(self, event):
