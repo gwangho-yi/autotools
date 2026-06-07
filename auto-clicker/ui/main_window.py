@@ -49,6 +49,7 @@ class MainWindow(QWidget):
         super().__init__()
         self._rows: list[ClickPointRow] = []
         self._capture_row: CaptureRow | None = None
+        self._capture_blocked = False
         self._engine = ClickEngine()
         self._ipc = IpcServer(self)
         self._build_ui()
@@ -184,6 +185,10 @@ class MainWindow(QWidget):
         self._capture_row = row
         self._list_layout.insertWidget(0, row)
         self._renumber_rows()
+        self._capture_blocked = False
+        self._start_btn.setEnabled(False)
+        self._stop_btn.setEnabled(False)
+        self._status_label.setText("auto-capture 연결됨 — 신호 대기 중...")
 
     def _on_client_disconnected(self) -> None:
         if self._capture_row is None:
@@ -192,6 +197,11 @@ class MainWindow(QWidget):
         self._capture_row.deleteLater()
         self._capture_row = None
         self._renumber_rows()
+        self._capture_blocked = False
+        if not self._engine.isRunning():
+            self._start_btn.setEnabled(True)
+            self._stop_btn.setEnabled(False)
+            self._status_label.setText("")
 
     def _on_start(self) -> None:
         if not self._rows:
@@ -207,17 +217,24 @@ class MainWindow(QWidget):
 
     def _on_stop(self) -> None:
         self._engine.stop()
-        self._start_btn.setEnabled(True)
         self._stop_btn.setEnabled(False)
-        self._status_label.setText("중지됨.")
+        if self._capture_row:
+            self._capture_blocked = True
+            self._status_label.setText("중지됨. (연결 해제 후 재시작 가능)")
+        else:
+            self._start_btn.setEnabled(True)
+            self._status_label.setText("중지됨.")
 
     def _on_sequence_finished(self) -> None:
-        self._start_btn.setEnabled(True)
         self._stop_btn.setEnabled(False)
-        self._status_label.setText("완료.")
+        if self._capture_row:
+            self._status_label.setText("완료. 다음 신호 대기 중...")
+        else:
+            self._start_btn.setEnabled(True)
+            self._status_label.setText("완료.")
 
     def _on_motion_from_capture(self, x: int, y: int) -> None:
-        if self._engine.isRunning():
+        if self._engine.isRunning() or self._capture_blocked:
             return
         click_type = self._capture_row.click_type if self._capture_row else "left"
         self._engine.set_points([r.point for r in self._rows])
