@@ -36,6 +36,17 @@ _BTN_OUTLINE = """
     }}
 """
 
+_BTN_DANGER = """
+    QPushButton {
+        background-color: transparent;
+        color: #e05555; border: 1px solid #e05555;
+        border-radius: 8px; font-size: 14px; font-weight: bold;
+        padding: 8px 20px;
+    }
+    QPushButton:hover { background-color: rgba(224,85,85,0.1); }
+    QPushButton:disabled { color: #4a2a2a; border-color: #4a2a2a; }
+"""
+
 _BTN_ADD = """
     QPushButton {
         background-color: #2a2a4e; color: #4ecca3;
@@ -111,6 +122,11 @@ class MainWindow(QWidget):
         self._start_btn.setStyleSheet(_BTN_PRIMARY)
         self._start_btn.clicked.connect(self._on_start)
         bottom.addWidget(self._start_btn)
+        self._stop_btn = QPushButton("■ 중지")
+        self._stop_btn.setStyleSheet(_BTN_DANGER)
+        self._stop_btn.setEnabled(False)
+        self._stop_btn.clicked.connect(self._on_stop)
+        bottom.addWidget(self._stop_btn)
         bottom.addStretch()
         self._connect_btn = QPushButton("auto-capture 연결")
         self._connect_btn.setCheckable(True)
@@ -166,10 +182,18 @@ class MainWindow(QWidget):
         self._engine.set_points([r.point for r in self._rows])
         self._engine.start_standalone()
         self._start_btn.setEnabled(False)
+        self._stop_btn.setEnabled(True)
         self._status_label.setText("실행 중...")
+
+    def _on_stop(self) -> None:
+        self._engine.stop()
+        self._start_btn.setEnabled(True)
+        self._stop_btn.setEnabled(False)
+        self._status_label.setText("중지됨.")
 
     def _on_sequence_finished(self) -> None:
         self._start_btn.setEnabled(True)
+        self._stop_btn.setEnabled(False)
         self._status_label.setText("완료.")
 
     def _on_toggle_connect(self, checked: bool) -> None:
@@ -177,7 +201,7 @@ class MainWindow(QWidget):
             self._server = IpcServer()
             self._server.motion_received.connect(self._on_motion_from_capture)
             self._server.client_connected.connect(
-                lambda: self._set_connect_status("auto-capture 연결됨 ●", "#4ecca3")
+                lambda: self._set_connect_status("수신 중 ●", "#4ecca3")
             )
             self._server.client_disconnected.connect(
                 lambda: self._set_connect_status("연결 대기 중...", "#888888")
@@ -201,6 +225,8 @@ class MainWindow(QWidget):
             return
         self._engine.set_points([r.point for r in self._rows])
         self._engine.start_from_capture()
+        self._start_btn.setEnabled(False)
+        self._stop_btn.setEnabled(True)
         self._status_label.setText("auto-capture 신호 수신 → 클릭 실행 중...")
 
     def closeEvent(self, event) -> None:

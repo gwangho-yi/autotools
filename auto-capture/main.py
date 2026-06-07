@@ -16,7 +16,7 @@ def main():
     try:
         tray = TrayIcon()
     except RuntimeError as e:
-        QMessageBox.critical(None, "ticketure", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
+        QMessageBox.critical(None, "auto-capture", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
         sys.exit(1)
 
     monitor_thread: MonitorThread | None = None

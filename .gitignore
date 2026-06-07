@@ -16,8 +16,8 @@ __pycache__/
 dist/
 build/
 *.spec
-!ticketure.spec
-!ticketure-windows.spec
+!auto-capture/auto-capture.spec
+!auto-capture/auto-capture-windows.spec
 !auto-clicker/auto-clicker.spec
 !auto-clicker/auto-clicker-windows.spec
 assets/icon.iconset/

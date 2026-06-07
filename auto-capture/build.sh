@@ -10,7 +10,7 @@ echo "==> Generating sound..."
 uv run --package auto-capture python scripts/make_sound.py
 
 echo "==> Building .app bundle..."
-uv run --package auto-capture pyinstaller ticketure.spec --clean --noconfirm
+uv run --package auto-capture pyinstaller auto-capture.spec --clean --noconfirm
 
 echo ""
-echo "Done: dist/ticketure.app"
+echo "Done: dist/auto-capture.app"

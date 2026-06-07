@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QLabel, QSpinBox, QComboBox, QPushButton
+    QWidget, QHBoxLayout, QLabel, QSpinBox, QPushButton, QRadioButton, QButtonGroup
 )
 from PySide6.QtCore import Signal
 
@@ -28,23 +28,30 @@ _SPIN_STYLE = """
     QSpinBox::up-button, QSpinBox::down-button { width: 14px; }
 """
 
-_COMBO_STYLE = """
-    QComboBox {
-        background-color: #2a2a4e;
-        color: white;
+_RADIO_STYLE = """
+    QRadioButton {
+        color: #888888;
+        font-size: 11px;
+        spacing: 3px;
+    }
+    QRadioButton::indicator {
+        width: 12px;
+        height: 12px;
+    }
+    QRadioButton::indicator:unchecked {
         border: 1px solid #3a3a5e;
-        border-radius: 4px;
-        padding: 1px 4px;
-    }
-    QComboBox QAbstractItemView {
+        border-radius: 6px;
         background-color: #2a2a4e;
-        color: white;
-        selection-background-color: #4ecca3;
-        selection-color: #1a1a2e;
     }
+    QRadioButton::indicator:checked {
+        border: 1px solid #4ecca3;
+        border-radius: 6px;
+        background-color: #4ecca3;
+    }
+    QRadioButton:checked { color: #4ecca3; }
 """
 
-_CLICK_TYPES = [("왼쪽 클릭", "left"), ("오른쪽 클릭", "right"), ("더블 클릭", "double")]
+_CLICK_TYPES = [("좌", "left"), ("우", "right"), ("더블", "double")]
 
 
 class ClickPointRow(QWidget):
@@ -61,7 +68,8 @@ class ClickPointRow(QWidget):
         self._point.minutes = self._m_spin.value()
         self._point.seconds = self._s_spin.value()
         self._point.ms = self._ms_spin.value()
-        self._point.click_type = _CLICK_TYPES[self._type_combo.currentIndex()][1]
+        checked_id = self._type_group.checkedId()
+        self._point.click_type = _CLICK_TYPES[checked_id][1] if checked_id >= 0 else "left"
         return self._point
 
     def set_index(self, index: int) -> None:
@@ -105,16 +113,16 @@ class ClickPointRow(QWidget):
             layout.addWidget(lbl)
             setattr(self, attr, spin)
 
-        self._type_combo = QComboBox()
-        for label, _ in _CLICK_TYPES:
-            self._type_combo.addItem(label)
+        self._type_group = QButtonGroup(self)
         default_idx = next(
             (i for i, (_, v) in enumerate(_CLICK_TYPES) if v == self._point.click_type), 0
         )
-        self._type_combo.setCurrentIndex(default_idx)
-        self._type_combo.setFixedWidth(95)
-        self._type_combo.setStyleSheet(_COMBO_STYLE)
-        layout.addWidget(self._type_combo)
+        for i, (label, _) in enumerate(_CLICK_TYPES):
+            rb = QRadioButton(label)
+            rb.setStyleSheet(_RADIO_STYLE)
+            self._type_group.addButton(rb, i)
+            layout.addWidget(rb)
+        self._type_group.button(default_idx).setChecked(True)
 
         layout.addStretch()
 

@@ -16,11 +16,11 @@ uv run python scripts\make_sound.py
 if errorlevel 1 goto :error
 
 echo =^=> Building .exe...
-uv run pyinstaller ticketure-windows.spec --clean --noconfirm
+uv run pyinstaller auto-capture-windows.spec --clean --noconfirm
 if errorlevel 1 goto :error
 
 echo.
-echo Done: dist\ticketure.exe
+echo Done: dist\auto-capture.exe
 goto :end
 
 :error

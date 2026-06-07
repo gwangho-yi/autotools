@@ -51,7 +51,7 @@ class Launcher(QWidget):
         self._center()
 
     def _build_ui(self):
-        self.setWindowTitle("ticketure")
+        self.setWindowTitle("auto-capture")
         self.setFixedSize(320, 400)
         self.setStyleSheet("background-color: #1a1a2e;")
 
@@ -65,7 +65,7 @@ class Launcher(QWidget):
         icon_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(icon_label)
 
-        title = QLabel("ticketure")
+        title = QLabel("auto-capture")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("color: white; font-size: 24px; font-weight: bold;")
         layout.addWidget(title)

@@ -26,42 +26,21 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
-    name='ticketure',
+    name='auto-capture',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=False,
+    icon='assets/icon.ico',
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='ticketure',
-)
-
-app = BUNDLE(
-    coll,
-    name='ticketure.app',
-    icon='assets/icon.icns',
-    bundle_identifier='com.ticketure.app',
-    info_plist={
-        'NSHighResolutionCapable': True,
-        'LSUIElement': True,
-        'NSScreenCaptureUsageDescription': '화면 변화 감지를 위해 화면 접근이 필요합니다.',
-        'CFBundleDisplayName': 'ticketure',
-        'CFBundleVersion': '0.1.0',
-        'CFBundleShortVersionString': '0.1.0',
-    },
 )

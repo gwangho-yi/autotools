@@ -15,7 +15,7 @@ class TrayIcon(QObject):
             raise RuntimeError("System tray is not available on this platform/session")
         self._tray = QSystemTrayIcon(self)
         self._tray.setIcon(QIcon(make_icon_pixmap(16)))
-        self._tray.setToolTip("ticketure — 모니터링 중")
+        self._tray.setToolTip("auto-capture — 모니터링 중")
         self._build_menu()
         self._tray.activated.connect(self._on_activated)
 
@@ -39,7 +39,7 @@ class TrayIcon(QObject):
 
     def set_status(self, text: str) -> None:
         self._status_action.setText(text)
-        self._tray.setToolTip(f"ticketure — {text}")
+        self._tray.setToolTip(f"auto-capture — {text}")
 
     def show(self):
         self._tray.show()
