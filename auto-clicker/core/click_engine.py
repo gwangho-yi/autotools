@@ -48,7 +48,8 @@ class ClickEngine(QThread):
                 button = Button.left if point.click_type == "left" else Button.right
                 self._do_click_button(button)
 
-        self.sequence_finished.emit()
+        if not self.isInterruptionRequested():
+            self.sequence_finished.emit()
 
     def _do_click_button(self, button: Button) -> None:
         self._mouse.press(button)
