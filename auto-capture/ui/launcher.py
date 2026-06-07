@@ -163,20 +163,18 @@ class Launcher(QWidget):
 
         layout.addWidget(self._btn_stack)
 
-        self.status_label = QLabel("")
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("color: #888888; font-size: 11px;")
-        layout.addWidget(self.status_label)
-
-        layout.addSpacing(4)
-
         # auto-clicker connection button
         self._conn_btn = QPushButton("auto-clicker 연결")
         self._conn_btn.setFixedHeight(34)
         self._conn_btn.setCheckable(True)
-        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#555577"))
+        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#8888bb"))
         self._conn_btn.toggled.connect(self._on_conn_toggled)
         layout.addWidget(self._conn_btn)
+
+        self.status_label = QLabel("")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("color: #888888; font-size: 11px;")
+        layout.addWidget(self.status_label)
 
     def _center(self):
         screen = QGuiApplication.primaryScreen()
@@ -198,7 +196,7 @@ class Launcher(QWidget):
             self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#888888"))
             self._conn_btn.setText("연결 중...")
         else:
-            self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#555577"))
+            self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#8888bb"))
             self._conn_btn.setText("auto-clicker 연결")
         self.connect_toggled.emit(checked)
 
@@ -213,7 +211,7 @@ class Launcher(QWidget):
         self._conn_btn.blockSignals(True)
         self._conn_btn.setChecked(False)
         self._conn_btn.setText("auto-clicker 연결")
-        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#555577"))
+        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#8888bb"))
         self._conn_btn.blockSignals(False)
 
     def set_monitoring(self, active: bool) -> None:
