@@ -47,7 +47,7 @@ class MonitorThread(QThread):
                     cx = self.region["left"] + fx * self.region["width"]
                     cy = self.region["top"] + fy * self.region["height"]
                     self.motion_detected.emit(int(cx), int(cy))
-                    alert()
+                    alert(int(cx), int(cy))
                     last_alert = now
                     prev = cur  # reset baseline after alert
                 else:
