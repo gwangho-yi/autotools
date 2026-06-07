@@ -1,19 +1,15 @@
 import sys
-from PySide6.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
+from ui.main_window import MainWindow
 
 
 def main():
     app = QApplication(sys.argv)
-    win = QWidget()
-    win.setWindowTitle("auto-clicker")
-    win.setFixedSize(560, 400)
-    win.setStyleSheet("background-color: #1a1a2e;")
-    lbl = QLabel("auto-clicker")
-    lbl.setAlignment(Qt.AlignCenter)
-    lbl.setStyleSheet("color: white; font-size: 24px;")
-    QVBoxLayout(win).addWidget(lbl)
-    win.show()
+    app.setQuitOnLastWindowClosed(True)
+    window = MainWindow()
+    window.show()
+    window.raise_()
+    window.activateWindow()
     sys.exit(app.exec())
 
 
