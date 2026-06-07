@@ -14,7 +14,6 @@ a = Analysis(
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',
-        'PySide6.QtNetwork',
         'pynput.mouse._darwin',
         'pynput.keyboard._darwin',
     ],
