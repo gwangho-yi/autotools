@@ -62,16 +62,24 @@ class MainWindow(QWidget):
         self._engine = ClickEngine()
         self._ipc = IpcServer(self)
         self._build_ui()
-        self._engine.sequence_finished.connect(self._on_sequence_finished)
-        self._ipc.motion_received.connect(self._on_motion_from_capture)
-        self._ipc.client_connected.connect(self._on_client_connected)
-        self._ipc.client_disconnected.connect(self._on_client_disconnected)
+        self._engine.sequence_finished.connect(
+            self._on_sequence_finished, Qt.ConnectionType.QueuedConnection
+        )
+        self._ipc.motion_received.connect(
+            self._on_motion_from_capture, Qt.ConnectionType.QueuedConnection
+        )
+        self._ipc.client_connected.connect(
+            self._on_client_connected, Qt.ConnectionType.QueuedConnection
+        )
+        self._ipc.client_disconnected.connect(
+            self._on_client_disconnected, Qt.ConnectionType.QueuedConnection
+        )
         self._ipc.start()
         self._center()
 
     def _build_ui(self) -> None:
         self.setWindowTitle("auto-clicker")
-        self.setMinimumSize(580, 460)
+        self.setMinimumSize(650, 460)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         root = QVBoxLayout(self)
@@ -158,6 +166,7 @@ class MainWindow(QWidget):
         row.pick_position_requested.connect(self._on_pick_position)
         self._rows.append(row)
         self._list_layout.addWidget(row)
+        self._renumber_rows()
 
     def _on_pick_position(self, row: ClickPointRow) -> None:
         self.hide()
@@ -253,7 +262,7 @@ class MainWindow(QWidget):
             self._status_label.setText("완료.")
         self._update_action_btn()
 
-    def _on_motion_from_capture(self, x: int, y: int) -> None:
+    def _on_motion_from_capture(self, _x: int, _y: int) -> None:
         if self._engine.isRunning() or self._capture_blocked:
             return
         click_type = self._capture_row.click_type if self._capture_row else "left"
