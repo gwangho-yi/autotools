@@ -1,41 +1,66 @@
 import json
 import socket
+import threading
 import time
 
 
-def test_motion_signal_emitted(qtbot):
-    from core.ipc_server import IpcServer
+def _start_test_server(port: int):
+    """Start a simple TCP server that accepts one connection and holds it."""
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(("127.0.0.1", port))
+    srv.listen(1)
+    srv.settimeout(3.0)
+    conns = []
 
-    server = IpcServer()
-    server.start()
-    time.sleep(0.15)  # wait for server to start listening
+    def _accept():
+        try:
+            conn, _ = srv.accept()
+            conns.append(conn)
+        except OSError:
+            pass
+
+    t = threading.Thread(target=_accept, daemon=True)
+    t.start()
+    return srv, conns, t
+
+
+def test_motion_signal_emitted(qtbot):
+    from core.ipc_client import IpcClient
+
+    srv, conns, _ = _start_test_server(54321)
+    client = IpcClient()
+    client.start()
+    time.sleep(0.2)  # wait for connection
 
     try:
-        with qtbot.waitSignal(server.motion_received, timeout=2000) as blocker:
-            with socket.create_connection(("127.0.0.1", 54321), timeout=1.0) as s:
-                s.sendall(
-                    json.dumps({"event": "motion", "x": 42, "y": 99}).encode() + b"\n"
-                )
+        with qtbot.waitSignal(client.motion_received, timeout=2000) as blocker:
+            assert conns, "client did not connect to test server"
+            msg = json.dumps({"event": "motion", "x": 10, "y": 20}) + "\n"
+            conns[0].sendall(msg.encode())
     finally:
-        server.stop()
+        client.stop()
+        srv.close()
 
-    assert blocker.args == [42, 99]
+    assert blocker.args == [10, 20]
 
 
 def test_invalid_message_ignored(qtbot):
-    from core.ipc_server import IpcServer
+    from core.ipc_client import IpcClient
 
-    server = IpcServer()
+    srv, conns, _ = _start_test_server(54321)
     received = []
-    server.motion_received.connect(lambda x, y: received.append((x, y)))
-    server.start()
-    time.sleep(0.15)
+    client = IpcClient()
+    client.motion_received.connect(lambda x, y: received.append((x, y)))
+    client.start()
+    time.sleep(0.2)
 
     try:
-        with socket.create_connection(("127.0.0.1", 54321), timeout=1.0) as s:
-            s.sendall(b"not json\n")
+        assert conns, "client did not connect to test server"
+        conns[0].sendall(b"not json\n")
         time.sleep(0.2)
     finally:
-        server.stop()
+        client.stop()
+        srv.close()
 
     assert received == []

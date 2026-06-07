@@ -6,6 +6,7 @@ from ui.launcher import Launcher
 from ui.tray import TrayIcon
 from ui.region_select import select_region
 from core.monitor import MonitorThread
+from core.ipc_server import IpcServer
 
 
 def main():
@@ -18,6 +19,9 @@ def main():
     except RuntimeError as e:
         QMessageBox.critical(None, "auto-capture", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
         sys.exit(1)
+
+    ipc_server = IpcServer()
+    ipc_server.start()
 
     monitor_thread: MonitorThread | None = None
 
@@ -43,6 +47,7 @@ def main():
 
     def on_motion(x, y):
         QCursor.setPos(x, y)
+        ipc_server.send_motion(x, y)
         if monitor_thread:
             monitor_thread.pause()
         launcher.set_paused()
@@ -72,13 +77,17 @@ def main():
         launcher.show()
         launcher.raise_()
 
+    def on_quit():
+        on_stop()
+        ipc_server.stop()
+
     launcher.start_requested.connect(on_start)
     launcher.stop_requested.connect(on_stop)
     launcher.pause_requested.connect(on_pause)
     launcher.resume_requested.connect(on_resume)
     tray.stop_requested.connect(on_stop)
     tray.open_requested.connect(on_open)
-    app.aboutToQuit.connect(on_stop)
+    app.aboutToQuit.connect(on_quit)
 
     launcher.show()
     launcher.raise_()

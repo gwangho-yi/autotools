@@ -58,7 +58,7 @@ class MonitorThread(QThread):
                     cx = self.region["left"] + fx * self.region["width"]
                     cy = self.region["top"] + fy * self.region["height"]
                     self.motion_detected.emit(int(cx), int(cy))
-                    alert(int(cx), int(cy))
+                    alert()
                     last_alert = now
                     prev = cur
                 else:
