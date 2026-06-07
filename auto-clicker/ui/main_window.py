@@ -216,9 +216,6 @@ class MainWindow(QWidget):
             self._server.client_connected.connect(
                 lambda: self._set_connect_status("수신 중 ●", "#4ecca3")
             )
-            self._server.client_disconnected.connect(
-                lambda: self._set_connect_status("연결 대기 중...", "#888888")
-            )
             self._server.start()
             self._set_connect_status("연결 대기 중...", "#888888")
         else:
