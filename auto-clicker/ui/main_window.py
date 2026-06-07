@@ -10,6 +10,7 @@ from core.click_engine import ClickEngine
 from core.ipc_server import IpcServer
 from ui.point_picker import pick_point
 from ui.click_point_row import ClickPointRow
+from ui.capture_row import CaptureRow
 
 _BTN_PRIMARY = """
     QPushButton {
@@ -47,11 +48,14 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self._rows: list[ClickPointRow] = []
+        self._capture_row: CaptureRow | None = None
         self._engine = ClickEngine()
         self._ipc = IpcServer(self)
         self._build_ui()
         self._engine.sequence_finished.connect(self._on_sequence_finished)
         self._ipc.motion_received.connect(self._on_motion_from_capture)
+        self._ipc.client_connected.connect(self._on_client_connected)
+        self._ipc.client_disconnected.connect(self._on_client_disconnected)
         self._ipc.start()
         self._center()
 
@@ -166,8 +170,28 @@ class MainWindow(QWidget):
         self._rows.remove(row)
         self._list_layout.removeWidget(row)
         row.deleteLater()
+        self._renumber_rows()
+
+    def _renumber_rows(self) -> None:
+        offset = 1 if self._capture_row else 0
         for i, r in enumerate(self._rows):
-            r.set_index(i)
+            r.set_index(i + offset)
+
+    def _on_client_connected(self) -> None:
+        if self._capture_row is not None:
+            return
+        row = CaptureRow(self)
+        self._capture_row = row
+        self._list_layout.insertWidget(0, row)
+        self._renumber_rows()
+
+    def _on_client_disconnected(self) -> None:
+        if self._capture_row is None:
+            return
+        self._list_layout.removeWidget(self._capture_row)
+        self._capture_row.deleteLater()
+        self._capture_row = None
+        self._renumber_rows()
 
     def _on_start(self) -> None:
         if not self._rows:
@@ -195,8 +219,9 @@ class MainWindow(QWidget):
     def _on_motion_from_capture(self, x: int, y: int) -> None:
         if self._engine.isRunning():
             return
+        click_type = self._capture_row.click_type if self._capture_row else "left"
         self._engine.set_points([r.point for r in self._rows])
-        self._engine.start_from_capture()
+        self._engine.start_from_capture(click_type)
         self._start_btn.setEnabled(False)
         self._stop_btn.setEnabled(True)
         self._status_label.setText("auto-capture 신호 수신 → 클릭 실행 중...")

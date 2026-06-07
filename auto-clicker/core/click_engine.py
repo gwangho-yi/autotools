@@ -14,7 +14,7 @@ class ClickEngine(QThread):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._points: list[ClickPoint] = []
-        self._immediate_first = False
+        self._capture_click_type: str | None = None
 
     def set_points(self, points: list[ClickPoint]) -> None:
         self._points = list(points)
@@ -22,13 +22,13 @@ class ClickEngine(QThread):
     def start_standalone(self) -> None:
         if self.isRunning():
             return
-        self._immediate_first = False
+        self._capture_click_type = None
         self.start()
 
-    def start_from_capture(self) -> None:
+    def start_from_capture(self, click_type: str = "left") -> None:
         if self.isRunning():
             return
-        self._immediate_first = True
+        self._capture_click_type = click_type
         self.start()
 
     def run(self) -> None:
@@ -36,8 +36,14 @@ class ClickEngine(QThread):
         # from the correct thread context on macOS.
         mouse = Controller()
 
-        if self._immediate_first:
-            self._do_click(mouse, Button.left)
+        if self._capture_click_type is not None:
+            if self._capture_click_type == "double":
+                self._do_click(mouse, Button.left)
+                time.sleep(_PRESS_HOLD_S)
+                self._do_click(mouse, Button.left)
+            else:
+                btn = Button.left if self._capture_click_type == "left" else Button.right
+                self._do_click(mouse, btn)
 
         for point in self._points:
             if self.isInterruptionRequested():
