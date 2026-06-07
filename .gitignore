@@ -18,4 +18,7 @@ build/
 *.spec
 !ticketure.spec
 !ticketure-windows.spec
+!auto-clicker/auto-clicker.spec
+!auto-clicker/auto-clicker-windows.spec
 assets/icon.iconset/
+auto-clicker/assets/icon.iconset/

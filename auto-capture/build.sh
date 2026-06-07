@@ -1,14 +1,16 @@
 #!/bin/bash
 set -e
 
+cd "$(dirname "$0")"
+
 echo "==> Generating icon..."
-.venv/bin/python scripts/make_icon.py
+uv run --package auto-capture python scripts/make_icon.py
 
 echo "==> Generating sound..."
-.venv/bin/python scripts/make_sound.py
+uv run --package auto-capture python scripts/make_sound.py
 
 echo "==> Building .app bundle..."
-.venv/bin/pyinstaller ticketure.spec --clean --noconfirm
+uv run --package auto-capture pyinstaller ticketure.spec --clean --noconfirm
 
 echo ""
 echo "Done: dist/ticketure.app"
