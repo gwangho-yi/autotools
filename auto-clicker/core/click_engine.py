@@ -38,7 +38,7 @@ class ClickEngine(QThread):
         for point in self._points:
             if self.isInterruptionRequested():
                 break
-            time.sleep(point.delay_ms / 1000)
+            self._interruptible_sleep(point.delay_ms / 1000)
             if self.isInterruptionRequested():
                 break
             self._mouse.position = (point.x, point.y)
@@ -50,6 +50,13 @@ class ClickEngine(QThread):
 
         if not self.isInterruptionRequested():
             self.sequence_finished.emit()
+
+    def _interruptible_sleep(self, seconds: float) -> None:
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            if self.isInterruptionRequested():
+                return
+            time.sleep(min(0.05, end - time.monotonic()))
 
     def _do_click_button(self, button: Button) -> None:
         self._mouse.press(button)
