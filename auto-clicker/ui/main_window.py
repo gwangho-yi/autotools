@@ -43,6 +43,15 @@ _BTN_ADD = """
     QPushButton:hover { background-color: #3a3a5e; }
 """
 
+_BTN_WAITING = """
+    QPushButton {
+        background-color: #2a2a4e; color: #444466;
+        border: none; border-radius: 8px;
+        font-size: 14px; font-weight: bold;
+        padding: 8px 20px;
+    }
+"""
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -111,15 +120,10 @@ class MainWindow(QWidget):
 
         # Bottom row
         bottom = QHBoxLayout()
-        self._start_btn = QPushButton("▶ 시작")
-        self._start_btn.setStyleSheet(_BTN_PRIMARY)
-        self._start_btn.clicked.connect(self._on_start)
-        bottom.addWidget(self._start_btn)
-        self._stop_btn = QPushButton("■ 중지")
-        self._stop_btn.setStyleSheet(_BTN_DANGER)
-        self._stop_btn.setEnabled(False)
-        self._stop_btn.clicked.connect(self._on_stop)
-        bottom.addWidget(self._stop_btn)
+        self._action_btn = QPushButton("▶ 시작")
+        self._action_btn.setStyleSheet(_BTN_PRIMARY)
+        self._action_btn.clicked.connect(self._on_action_clicked)
+        bottom.addWidget(self._action_btn)
         bottom.addStretch()
         root.addLayout(bottom)
 
@@ -178,6 +182,27 @@ class MainWindow(QWidget):
         for i, r in enumerate(self._rows):
             r.set_index(i + offset)
 
+    def _update_action_btn(self) -> None:
+        if self._engine.isRunning():
+            self._action_btn.setText("■ 중지")
+            self._action_btn.setStyleSheet(_BTN_DANGER)
+            self._action_btn.setEnabled(True)
+        elif self._capture_row:
+            text = "중지됨" if self._capture_blocked else "대기 중"
+            self._action_btn.setText(text)
+            self._action_btn.setStyleSheet(_BTN_WAITING)
+            self._action_btn.setEnabled(False)
+        else:
+            self._action_btn.setText("▶ 시작")
+            self._action_btn.setStyleSheet(_BTN_PRIMARY)
+            self._action_btn.setEnabled(True)
+
+    def _on_action_clicked(self) -> None:
+        if self._engine.isRunning():
+            self._on_stop()
+        else:
+            self._on_start()
+
     def _on_client_connected(self) -> None:
         if self._capture_row is not None:
             return
@@ -186,8 +211,7 @@ class MainWindow(QWidget):
         self._list_layout.insertWidget(0, row)
         self._renumber_rows()
         self._capture_blocked = False
-        self._start_btn.setEnabled(False)
-        self._stop_btn.setEnabled(False)
+        self._update_action_btn()
         self._status_label.setText("auto-capture 연결됨 — 신호 대기 중...")
 
     def _on_client_disconnected(self) -> None:
@@ -198,9 +222,8 @@ class MainWindow(QWidget):
         self._capture_row = None
         self._renumber_rows()
         self._capture_blocked = False
+        self._update_action_btn()
         if not self._engine.isRunning():
-            self._start_btn.setEnabled(True)
-            self._stop_btn.setEnabled(False)
             self._status_label.setText("")
 
     def _on_start(self) -> None:
@@ -211,27 +234,24 @@ class MainWindow(QWidget):
             return
         self._engine.set_points([r.point for r in self._rows])
         self._engine.start_standalone()
-        self._start_btn.setEnabled(False)
-        self._stop_btn.setEnabled(True)
+        self._update_action_btn()
         self._status_label.setText("실행 중...")
 
     def _on_stop(self) -> None:
         self._engine.stop()
-        self._stop_btn.setEnabled(False)
         if self._capture_row:
             self._capture_blocked = True
             self._status_label.setText("중지됨. (연결 해제 후 재시작 가능)")
         else:
-            self._start_btn.setEnabled(True)
             self._status_label.setText("중지됨.")
+        self._update_action_btn()
 
     def _on_sequence_finished(self) -> None:
-        self._stop_btn.setEnabled(False)
         if self._capture_row:
             self._status_label.setText("완료. 다음 신호 대기 중...")
         else:
-            self._start_btn.setEnabled(True)
             self._status_label.setText("완료.")
+        self._update_action_btn()
 
     def _on_motion_from_capture(self, x: int, y: int) -> None:
         if self._engine.isRunning() or self._capture_blocked:
@@ -239,8 +259,7 @@ class MainWindow(QWidget):
         click_type = self._capture_row.click_type if self._capture_row else "left"
         self._engine.set_points([r.point for r in self._rows])
         self._engine.start_from_capture(click_type)
-        self._start_btn.setEnabled(False)
-        self._stop_btn.setEnabled(True)
+        self._update_action_btn()
         self._status_label.setText("auto-capture 신호 수신 → 클릭 실행 중...")
 
     def closeEvent(self, event) -> None:
