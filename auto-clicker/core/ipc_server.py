@@ -1,5 +1,8 @@
 import json
+import os
+import signal
 import socket
+import subprocess
 from PySide6.QtCore import QThread, Signal
 
 
@@ -15,8 +18,23 @@ class IpcServer(QThread):
         self._running = False
         self._sock: socket.socket | None = None
 
+    def _free_port(self) -> None:
+        try:
+            result = subprocess.run(
+                ["lsof", "-ti", f":{self.PORT}"],
+                capture_output=True, text=True
+            )
+            for pid_str in result.stdout.strip().split():
+                try:
+                    os.kill(int(pid_str), signal.SIGTERM)
+                except (ProcessLookupError, ValueError):
+                    pass
+        except Exception:
+            pass
+
     def run(self) -> None:
         self._running = True
+        self._free_port()
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
