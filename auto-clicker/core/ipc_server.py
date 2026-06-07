@@ -23,19 +23,23 @@ class IpcServer(QThread):
             self._sock.bind(("127.0.0.1", self.PORT))
             self._sock.listen(1)
             self._sock.settimeout(1.0)
-        except OSError:
+            print(f"[IpcServer] listening on port {self.PORT}", flush=True)
+        except OSError as e:
+            print(f"[IpcServer] bind failed: {e}", flush=True)
             self._running = False
             return
 
         while self._running:
             try:
-                conn, _ = self._sock.accept()
+                conn, addr = self._sock.accept()
             except socket.timeout:
                 continue
             except OSError:
                 break
+            print(f"[IpcServer] client connected from {addr}", flush=True)
             self.client_connected.emit()
             self._handle(conn)
+            print("[IpcServer] client disconnected", flush=True)
             self.client_disconnected.emit()
 
         try:

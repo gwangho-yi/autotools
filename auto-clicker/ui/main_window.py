@@ -213,11 +213,13 @@ class MainWindow(QWidget):
             self._on_start()
 
     def _on_client_connected(self) -> None:
+        print("[MainWindow] _on_client_connected called", flush=True)
         if self._capture_row is not None:
             return
-        row = CaptureRow(self)
+        row = CaptureRow()
         self._capture_row = row
         self._list_layout.insertWidget(0, row)
+        row.show()
         self._renumber_rows()
         self._capture_blocked = False
         self._update_action_btn()
