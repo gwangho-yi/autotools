@@ -49,6 +49,6 @@ def test_double_click(qtbot):
         with qtbot.waitSignal(engine.sequence_finished, timeout=3000):
             engine.start_standalone()
 
-    # pynput click(button, 2) 사용
-    from pynput.mouse import Button
-    mock_mouse.click.assert_called_once_with(Button.left, 2)
+    # double click = press/release twice
+    assert mock_mouse.press.call_count == 2
+    assert mock_mouse.release.call_count == 2
