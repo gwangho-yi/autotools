@@ -6,7 +6,7 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[],
+    datas=[('assets/notify.wav', 'assets')],
     hiddenimports=[
         'PySide6.QtCore',
         'PySide6.QtGui',

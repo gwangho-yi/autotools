@@ -11,6 +11,10 @@ echo =^=> Generating icon...
 uv run python scripts\make_icon.py
 if errorlevel 1 goto :error
 
+echo =^=> Generating sound...
+uv run python scripts\make_sound.py
+if errorlevel 1 goto :error
+
 echo =^=> Building .exe...
 uv run pyinstaller ticketure-windows.spec --clean --noconfirm
 if errorlevel 1 goto :error
