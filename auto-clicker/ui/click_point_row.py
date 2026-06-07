@@ -55,7 +55,8 @@ _CLICK_TYPES = [("좌", "left"), ("우", "right"), ("더블", "double")]
 
 
 class ClickPointRow(QWidget):
-    delete_requested = Signal(object)  # emits self
+    delete_requested = Signal(object)
+    pick_position_requested = Signal(object)
 
     def __init__(self, index: int, point: ClickPoint, parent=None):
         super().__init__(parent)
@@ -93,6 +94,7 @@ class ClickPointRow(QWidget):
         self._pos_btn = QPushButton(f"({self._point.x}, {self._point.y})")
         self._pos_btn.setFixedWidth(100)
         self._pos_btn.setStyleSheet(_BTN_STYLE.format(color="#4ecca3", border="#4ecca3"))
+        self._pos_btn.clicked.connect(lambda: self.pick_position_requested.emit(self))
         layout.addWidget(self._pos_btn)
 
         for attr, label_text, max_val, init_val in [

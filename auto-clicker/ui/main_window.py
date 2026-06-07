@@ -163,8 +163,21 @@ class MainWindow(QWidget):
         point = ClickPoint(x=x, y=y)
         row = ClickPointRow(len(self._rows), point)
         row.delete_requested.connect(self._on_delete_row)
+        row.pick_position_requested.connect(self._on_pick_position)
         self._rows.append(row)
         self._list_layout.addWidget(row)
+
+    def _on_pick_position(self, row: ClickPointRow) -> None:
+        self.hide()
+        QApplication.processEvents()
+        result = pick_point()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        if result is None:
+            return
+        x, y = result
+        row.set_position(x, y)
 
     def _on_delete_row(self, row: ClickPointRow) -> None:
         self._rows.remove(row)
