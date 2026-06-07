@@ -1,0 +1,6 @@
+[project]
+name = "auto-clicker"
+version = "0.1.0"
+description = "Automated click execution from IPC signals"
+requires-python = ">=3.14"
+dependencies = []

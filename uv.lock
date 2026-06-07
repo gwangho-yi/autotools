@@ -2,6 +2,12 @@ version = 1
 revision = 3
 requires-python = ">=3.14"
 
+[manifest]
+members = [
+    "auto-capture",
+    "auto-clicker",
+]
+
 [[package]]
 name = "altgraph"
 version = "0.17.5"
@@ -10,6 +16,30 @@ sdist = { url = "https://files.pythonhosted.org/packages/7e/f8/97fdf103f38fed679
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a9/ba/000a1996d4308bc65120167c21241a3b205464a2e0b58deda26ae8ac21d1/altgraph-0.17.5-py2.py3-none-any.whl", hash = "sha256:f3a22400bce1b0c701683820ac4f3b159cd301acab067c51c653e06961600597", size = 21228, upload-time = "2025-11-21T20:35:49.444Z" },
 ]
+
+[[package]]
+name = "auto-capture"
+version = "0.1.0"
+source = { virtual = "auto-capture" }
+dependencies = [
+    { name = "mss" },
+    { name = "numpy" },
+    { name = "pyinstaller" },
+    { name = "pyside6" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mss", specifier = ">=10.2.0" },
+    { name = "numpy", specifier = ">=2.4.6" },
+    { name = "pyinstaller", specifier = ">=6.20.0" },
+    { name = "pyside6", specifier = ">=6.11.1" },
+]
+
+[[package]]
+name = "auto-clicker"
+version = "0.1.0"
+source = { virtual = "auto-clicker" }
 
 [[package]]
 name = "macholib"
@@ -196,23 +226,4 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/57/d5/dd4f1defed400be03340f2ede34b61f846776650b4e7ed9ebaf4c71979a2/shiboken6-6.11.1-cp310-abi3-manylinux_2_39_aarch64.whl", hash = "sha256:1bd2f4314414df2d122d9f646e03b731bc6d6b5f77a5f53f99a4fe4e97d84e6f", size = 270350, upload-time = "2026-05-13T09:47:04.02Z" },
     { url = "https://files.pythonhosted.org/packages/52/b5/3f6fb2ee65b534193fb4ef713dd619dc31dadff5d12c16979a7699ad58be/shiboken6-6.11.1-cp310-abi3-win_amd64.whl", hash = "sha256:c2c6863aa80ec18c0f82cea3417837b279cdc60024ac17123461dc9042577df7", size = 1223647, upload-time = "2026-05-13T09:47:05.924Z" },
     { url = "https://files.pythonhosted.org/packages/98/d1/f15ca0e1666faae02c945f48e745ea35f8fcd8243b176109b4e2c4251f47/shiboken6-6.11.1-cp310-abi3-win_arm64.whl", hash = "sha256:7c8d9af17db4495d4fa5b1c393f218311c4855546b9dfa6a0bd21bcd66b55e9d", size = 1784170, upload-time = "2026-05-13T09:47:07.617Z" },
-]
-
-[[package]]
-name = "ticketure"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "mss" },
-    { name = "numpy" },
-    { name = "pyinstaller" },
-    { name = "pyside6" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "mss", specifier = ">=10.2.0" },
-    { name = "numpy", specifier = ">=2.4.6" },
-    { name = "pyinstaller", specifier = ">=6.20.0" },
-    { name = "pyside6", specifier = ">=6.11.1" },
 ]
