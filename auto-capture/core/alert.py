@@ -16,7 +16,8 @@ _CLICKER_PORT = 54321
 
 def _send_to_clicker(x: int, y: int) -> None:
     try:
-        with socket.create_connection(("localhost", _CLICKER_PORT), timeout=0.1) as s:
+        with socket.create_connection(("127.0.0.1", _CLICKER_PORT), timeout=0.1) as s:
+            s.settimeout(0.1)
             msg = json.dumps({"event": "motion", "x": x, "y": y}) + "\n"
             s.sendall(msg.encode())
     except OSError:
