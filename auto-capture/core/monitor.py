@@ -1,3 +1,4 @@
+import threading
 import time
 import numpy as np
 import mss
@@ -18,6 +19,14 @@ class MonitorThread(QThread):
     def __init__(self, region, parent=None):
         super().__init__(parent)
         self.region = region
+        self._pause_event = threading.Event()
+        self._pause_event.set()  # running by default
+
+    def pause(self) -> None:
+        self._pause_event.clear()
+
+    def resume(self) -> None:
+        self._pause_event.set()
 
     def run(self):
         try:
@@ -30,6 +39,8 @@ class MonitorThread(QThread):
         with mss.mss() as sct:
             prev = np.array(sct.grab(self.region), dtype=np.int16)[:, :, :3]
             while not self.isInterruptionRequested():
+                if not self._pause_event.wait(timeout=0.1):
+                    continue
                 time.sleep(INTERVAL)
                 try:
                     cur = np.array(sct.grab(self.region), dtype=np.int16)[:, :, :3]
@@ -49,6 +60,6 @@ class MonitorThread(QThread):
                     self.motion_detected.emit(int(cx), int(cy))
                     alert(int(cx), int(cy))
                     last_alert = now
-                    prev = cur  # reset baseline after alert
+                    prev = cur
                 else:
                     prev = cur

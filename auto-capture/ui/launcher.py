@@ -1,4 +1,6 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QApplication
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget
+)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QGuiApplication, QPainter, QColor, QPen, QPixmap
 
@@ -21,10 +23,8 @@ def make_icon_pixmap(size: int) -> QPixmap:
     y = int(size * 0.2)
     radius = max(2, int(size * 0.08))
 
-    # 티켓 외곽
     p.drawRoundedRect(margin, y, w, h, radius, radius)
 
-    # 좌우 반원 노치
     notch_r = max(2, int(size * 0.07))
     notch_y = y + h // 2
     p.setBrush(QColor("#1a1a2e"))
@@ -32,7 +32,6 @@ def make_icon_pixmap(size: int) -> QPixmap:
     p.drawEllipse(margin - notch_r, notch_y - notch_r, notch_r * 2, notch_r * 2)
     p.drawEllipse(margin + w - notch_r, notch_y - notch_r, notch_r * 2, notch_r * 2)
 
-    # 점선 구분선
     dash_pen = QPen(QColor("#4ecca3"), max(1, int(size * 0.04)), Qt.DashLine)
     p.setPen(dash_pen)
     p.drawLine(margin + notch_r, notch_y, margin + w - notch_r, notch_y)
@@ -41,9 +40,40 @@ def make_icon_pixmap(size: int) -> QPixmap:
     return px
 
 
+_BTN_GREEN = """
+    QPushButton {
+        background-color: #4ecca3; color: #1a1a2e;
+        border: none; border-radius: 8px;
+        font-size: 16px; font-weight: bold;
+    }
+    QPushButton:hover { background-color: #3db89a; }
+    QPushButton:disabled { background-color: #2a4a3e; color: #555; }
+"""
+
+_BTN_RED = """
+    QPushButton {
+        background-color: #e05555; color: white;
+        border: none; border-radius: 8px;
+        font-size: 16px; font-weight: bold;
+    }
+    QPushButton:hover { background-color: #c04444; }
+"""
+
+_BTN_OUTLINE = """
+    QPushButton {
+        background-color: transparent; color: #4ecca3;
+        border: 1px solid #4ecca3; border-radius: 8px;
+        font-size: 16px; font-weight: bold;
+    }
+    QPushButton:hover { background-color: rgba(78,204,163,0.1); }
+"""
+
+
 class Launcher(QWidget):
     start_requested = Signal()
     stop_requested = Signal()
+    pause_requested = Signal()
+    resume_requested = Signal()
 
     def __init__(self):
         super().__init__()
@@ -78,22 +108,49 @@ class Launcher(QWidget):
 
         layout.addSpacing(20)
 
+        self._btn_stack = QStackedWidget()
+        self._btn_stack.setFixedHeight(44)
+
+        # Page 0: idle
+        p0 = QWidget()
+        p0_l = QVBoxLayout(p0)
+        p0_l.setContentsMargins(0, 0, 0, 0)
         self.start_btn = QPushButton("시작")
         self.start_btn.setFixedHeight(44)
-        self.start_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4ecca3;
-                color: #1a1a2e;
-                border: none;
-                border-radius: 8px;
-                font-size: 16px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #3db89a; }
-            QPushButton:disabled { background-color: #2a4a3e; color: #555; }
-        """)
+        self.start_btn.setStyleSheet(_BTN_GREEN)
         self.start_btn.clicked.connect(self._on_start)
-        layout.addWidget(self.start_btn)
+        p0_l.addWidget(self.start_btn)
+        self._btn_stack.addWidget(p0)
+
+        # Page 1: monitoring
+        p1 = QWidget()
+        p1_l = QVBoxLayout(p1)
+        p1_l.setContentsMargins(0, 0, 0, 0)
+        self.pause_btn = QPushButton("일시정지")
+        self.pause_btn.setFixedHeight(44)
+        self.pause_btn.setStyleSheet(_BTN_OUTLINE)
+        self.pause_btn.clicked.connect(lambda: self.pause_requested.emit())
+        p1_l.addWidget(self.pause_btn)
+        self._btn_stack.addWidget(p1)
+
+        # Page 2: paused
+        p2 = QWidget()
+        p2_l = QHBoxLayout(p2)
+        p2_l.setContentsMargins(0, 0, 0, 0)
+        p2_l.setSpacing(8)
+        self.resume_btn = QPushButton("재시작")
+        self.resume_btn.setFixedHeight(44)
+        self.resume_btn.setStyleSheet(_BTN_GREEN)
+        self.resume_btn.clicked.connect(lambda: self.resume_requested.emit())
+        p2_l.addWidget(self.resume_btn)
+        self.stop_btn = QPushButton("중지")
+        self.stop_btn.setFixedHeight(44)
+        self.stop_btn.setStyleSheet(_BTN_RED)
+        self.stop_btn.clicked.connect(lambda: self.stop_requested.emit())
+        p2_l.addWidget(self.stop_btn)
+        self._btn_stack.addWidget(p2)
+
+        layout.addWidget(self._btn_stack)
 
         self.status_label = QLabel("")
         self.status_label.setAlignment(Qt.AlignCenter)
@@ -115,46 +172,20 @@ class Launcher(QWidget):
         self.status_label.setText("영역을 선택하세요...")
         self.start_requested.emit()
 
-    def _on_stop(self):
-        self.stop_requested.emit()
-
     def set_monitoring(self, active: bool) -> None:
-        self.start_btn.clicked.disconnect()
         if active:
-            self.start_btn.setText("중지")
-            self.start_btn.setEnabled(True)
-            self.start_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #e05555;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: bold;
-                }
-                QPushButton:hover { background-color: #c04444; }
-            """)
-            self.start_btn.clicked.connect(self._on_stop)
+            self._btn_stack.setCurrentIndex(1)
             self.status_label.setText("모니터링 중...")
         else:
-            self.start_btn.setText("시작")
+            self._btn_stack.setCurrentIndex(0)
             self.start_btn.setEnabled(True)
-            self.start_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #4ecca3;
-                    color: #1a1a2e;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: bold;
-                }
-                QPushButton:hover { background-color: #3db89a; }
-                QPushButton:disabled { background-color: #2a4a3e; color: #555; }
-            """)
-            self.start_btn.clicked.connect(self._on_start)
             self.status_label.setText("")
 
-    def reset(self):
+    def set_paused(self) -> None:
+        self._btn_stack.setCurrentIndex(2)
+        self.status_label.setText("일시정지 — 변화 감지 후 대기 중")
+
+    def reset(self) -> None:
         self.set_monitoring(False)
         self.show()
         self.raise_()
