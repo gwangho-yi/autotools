@@ -68,9 +68,4 @@ class IpcServer(QThread):
 
     def stop(self) -> None:
         self._running = False
-        if self._sock:
-            try:
-                self._sock.close()
-            except OSError:
-                pass
         self.wait()
