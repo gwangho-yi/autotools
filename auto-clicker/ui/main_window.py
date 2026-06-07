@@ -7,7 +7,7 @@ from PySide6.QtGui import QGuiApplication
 
 from core.models import ClickPoint
 from core.click_engine import ClickEngine
-from core.ipc_client import IpcClient
+from core.ipc_server import IpcServer
 from ui.point_picker import pick_point
 from ui.click_point_row import ClickPointRow
 
@@ -20,20 +20,6 @@ _BTN_PRIMARY = """
     }
     QPushButton:hover { background-color: #3db89a; }
     QPushButton:disabled { background-color: #2a4a3e; color: #555; }
-"""
-
-_BTN_OUTLINE = """
-    QPushButton {{
-        background-color: transparent;
-        color: {color}; border: 1px solid {color};
-        border-radius: 8px; font-size: 13px;
-        padding: 8px 16px;
-    }}
-    QPushButton:hover {{ background-color: rgba(78,204,163,0.1); }}
-    QPushButton:checked {{
-        background-color: rgba(78,204,163,0.15);
-        color: #4ecca3; border-color: #4ecca3;
-    }}
 """
 
 _BTN_DANGER = """
@@ -62,9 +48,11 @@ class MainWindow(QWidget):
         super().__init__()
         self._rows: list[ClickPointRow] = []
         self._engine = ClickEngine()
-        self._client: IpcClient | None = None
+        self._ipc = IpcServer(self)
         self._build_ui()
         self._engine.sequence_finished.connect(self._on_sequence_finished)
+        self._ipc.motion_received.connect(self._on_motion_from_capture)
+        self._ipc.start()
         self._center()
 
     def _build_ui(self) -> None:
@@ -128,11 +116,6 @@ class MainWindow(QWidget):
         self._stop_btn.clicked.connect(self._on_stop)
         bottom.addWidget(self._stop_btn)
         bottom.addStretch()
-        self._connect_btn = QPushButton("auto-capture 연결")
-        self._connect_btn.setCheckable(True)
-        self._connect_btn.setStyleSheet(_BTN_OUTLINE.format(color="#888888"))
-        self._connect_btn.clicked.connect(self._on_toggle_connect)
-        bottom.addWidget(self._connect_btn)
         root.addLayout(bottom)
 
         # Status
@@ -209,36 +192,6 @@ class MainWindow(QWidget):
         self._stop_btn.setEnabled(False)
         self._status_label.setText("완료.")
 
-    def _on_toggle_connect(self, checked: bool) -> None:
-        if checked:
-            self._client = IpcClient()
-            self._client.motion_received.connect(self._on_motion_from_capture)
-            self._client.connected.connect(
-                lambda: self._set_connect_status("수신 중 ●", "#4ecca3")
-            )
-            self._client.disconnected.connect(self._on_client_disconnected)
-            self._client.start()
-            self._set_connect_status("연결 중...", "#888888")
-        else:
-            if self._client:
-                self._client.stop()
-                self._client = None
-            self._connect_btn.setText("auto-capture 연결")
-            self._connect_btn.setStyleSheet(_BTN_OUTLINE.format(color="#888888"))
-            self._status_label.setText("")
-
-    def _on_client_disconnected(self) -> None:
-        self._client = None
-        if self._connect_btn.isChecked():
-            self._connect_btn.setChecked(False)
-            self._connect_btn.setText("auto-capture 연결")
-            self._connect_btn.setStyleSheet(_BTN_OUTLINE.format(color="#888888"))
-            self._status_label.setText("auto-capture 연결이 끊겼습니다.")
-
-    def _set_connect_status(self, text: str, color: str) -> None:
-        self._connect_btn.setText(text)
-        self._connect_btn.setStyleSheet(_BTN_OUTLINE.format(color=color))
-
     def _on_motion_from_capture(self, x: int, y: int) -> None:
         if self._engine.isRunning():
             return
@@ -249,8 +202,7 @@ class MainWindow(QWidget):
         self._status_label.setText("auto-capture 신호 수신 → 클릭 실행 중...")
 
     def closeEvent(self, event) -> None:
-        if self._client:
-            self._client.stop()
+        self._ipc.stop()
         if self._engine.isRunning():
             self._engine.stop()
         event.accept()

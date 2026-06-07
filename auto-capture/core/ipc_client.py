@@ -1,10 +1,10 @@
 import json
 import socket
+import threading
 from PySide6.QtCore import QThread, Signal
 
 
 class IpcClient(QThread):
-    motion_received = Signal(int, int)
     connected = Signal()
     disconnected = Signal()
 
@@ -14,32 +14,37 @@ class IpcClient(QThread):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._running = False
+        self._sock: socket.socket | None = None
+        self._lock = threading.Lock()
+
+    def send_motion(self, x: int, y: int) -> None:
+        msg = (json.dumps({"event": "motion", "x": x, "y": y}) + "\n").encode()
+        with self._lock:
+            if self._sock:
+                try:
+                    self._sock.sendall(msg)
+                except OSError:
+                    pass
 
     def run(self) -> None:
         self._running = True
         try:
             with socket.create_connection((self.HOST, self.PORT), timeout=2.0) as s:
-                self.connected.emit()
                 s.settimeout(1.0)
-                buf = b""
+                with self._lock:
+                    self._sock = s
+                self.connected.emit()
                 while self._running:
                     try:
-                        data = s.recv(1024)
+                        data = s.recv(1)
                     except socket.timeout:
                         continue
                     except OSError:
                         break
                     if not data:
                         break
-                    buf += data
-                    while b"\n" in buf:
-                        line, buf = buf.split(b"\n", 1)
-                        try:
-                            msg = json.loads(line)
-                            if msg.get("event") == "motion":
-                                self.motion_received.emit(int(msg["x"]), int(msg["y"]))
-                        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-                            pass
+                with self._lock:
+                    self._sock = None
         except OSError:
             pass
         finally:
@@ -47,4 +52,10 @@ class IpcClient(QThread):
 
     def stop(self) -> None:
         self._running = False
+        with self._lock:
+            if self._sock:
+                try:
+                    self._sock.close()
+                except OSError:
+                    pass
         self.wait()

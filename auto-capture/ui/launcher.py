@@ -68,12 +68,23 @@ _BTN_OUTLINE = """
     QPushButton:hover { background-color: rgba(78,204,163,0.1); }
 """
 
+_CONN_BTN_STYLE = """
+    QPushButton {{
+        background-color: transparent;
+        color: {color}; border: 1px solid {color};
+        border-radius: 6px; font-size: 12px;
+        padding: 4px 10px;
+    }}
+    QPushButton:hover {{ background-color: rgba(78,204,163,0.07); }}
+"""
+
 
 class Launcher(QWidget):
     start_requested = Signal()
     stop_requested = Signal()
     pause_requested = Signal()
     resume_requested = Signal()
+    connect_toggled = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -82,16 +93,16 @@ class Launcher(QWidget):
 
     def _build_ui(self):
         self.setWindowTitle("auto-capture")
-        self.setFixedSize(320, 400)
+        self.setFixedSize(320, 440)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(12)
-        layout.setContentsMargins(40, 50, 40, 50)
+        layout.setSpacing(10)
+        layout.setContentsMargins(40, 40, 40, 40)
 
         icon_label = QLabel()
-        icon_label.setPixmap(make_icon_pixmap(72))
+        icon_label.setPixmap(make_icon_pixmap(64))
         icon_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(icon_label)
 
@@ -106,7 +117,7 @@ class Launcher(QWidget):
         subtitle.setStyleSheet("color: #888888; font-size: 12px;")
         layout.addWidget(subtitle)
 
-        layout.addSpacing(20)
+        layout.addSpacing(10)
 
         self._btn_stack = QStackedWidget()
         self._btn_stack.setFixedHeight(44)
@@ -157,6 +168,16 @@ class Launcher(QWidget):
         self.status_label.setStyleSheet("color: #888888; font-size: 11px;")
         layout.addWidget(self.status_label)
 
+        layout.addSpacing(4)
+
+        # auto-clicker connection button
+        self._conn_btn = QPushButton("auto-clicker 연결")
+        self._conn_btn.setFixedHeight(34)
+        self._conn_btn.setCheckable(True)
+        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#555577"))
+        self._conn_btn.toggled.connect(self._on_conn_toggled)
+        layout.addWidget(self._conn_btn)
+
     def _center(self):
         screen = QGuiApplication.primaryScreen()
         if screen is None:
@@ -171,6 +192,29 @@ class Launcher(QWidget):
         self.start_btn.setEnabled(False)
         self.status_label.setText("영역을 선택하세요...")
         self.start_requested.emit()
+
+    def _on_conn_toggled(self, checked: bool) -> None:
+        if checked:
+            self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#888888"))
+            self._conn_btn.setText("연결 중...")
+        else:
+            self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#555577"))
+            self._conn_btn.setText("auto-clicker 연결")
+        self.connect_toggled.emit(checked)
+
+    def set_connect_status(self, text: str, connected: bool) -> None:
+        self._conn_btn.blockSignals(True)
+        self._conn_btn.setText(text)
+        color = "#4ecca3" if connected else "#888888"
+        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color=color))
+        self._conn_btn.blockSignals(False)
+
+    def reset_connect_btn(self) -> None:
+        self._conn_btn.blockSignals(True)
+        self._conn_btn.setChecked(False)
+        self._conn_btn.setText("auto-clicker 연결")
+        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#555577"))
+        self._conn_btn.blockSignals(False)
 
     def set_monitoring(self, active: bool) -> None:
         if active:

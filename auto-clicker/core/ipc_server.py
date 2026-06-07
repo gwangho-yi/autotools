@@ -15,7 +15,7 @@ class IpcServer(QThread):
         self._running = False
         self._sock: socket.socket | None = None
 
-    def run(self):
+    def run(self) -> None:
         self._running = True
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
