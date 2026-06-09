@@ -18,7 +18,9 @@ build/
 *.spec
 !auto-capture/auto-capture.spec
 !auto-capture/auto-capture-windows.spec
+!auto-capture/auto-capture-windows-x64.spec
 !auto-clicker/auto-clicker.spec
 !auto-clicker/auto-clicker-windows.spec
+!auto-clicker/auto-clicker-windows-x64.spec
 assets/icon.iconset/
 auto-clicker/assets/icon.iconset/

@@ -1,0 +1,46 @@
+name: Build Windows x64
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build auto-clicker
+        working-directory: auto-clicker
+        run: |
+          uv sync
+          uv add pyinstaller pynput
+          uv run python scripts/make_icon.py
+          uv run python scripts/make_sound.py
+          uv run pyinstaller auto-clicker-windows-x64.spec --clean --noconfirm
+
+      - name: Build auto-capture
+        working-directory: auto-capture
+        run: |
+          uv sync
+          uv add pyinstaller
+          uv run python scripts/make_icon.py
+          uv run python scripts/make_sound.py
+          uv run pyinstaller auto-capture-windows-x64.spec --clean --noconfirm
+
+      - name: Upload auto-clicker
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-clicker-windows-x64
+          path: auto-clicker/dist/auto-clicker.exe
+
+      - name: Upload auto-capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-capture-windows-x64
+          path: auto-capture/dist/auto-capture.exe
