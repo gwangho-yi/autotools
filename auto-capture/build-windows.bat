@@ -15,6 +15,10 @@ echo =^=> Generating sound...
 uv run python scripts\make_sound.py
 if errorlevel 1 goto :error
 
+echo =^=> Closing running instances...
+taskkill /f /im auto-capture.exe 2>nul
+del /f /q dist\auto-capture.exe 2>nul
+
 echo =^=> Building .exe...
 uv run pyinstaller auto-capture-windows.spec --clean --noconfirm
 if errorlevel 1 goto :error

@@ -15,6 +15,10 @@ echo =^=> Generating sound...
 uv run python scripts\make_sound.py
 if errorlevel 1 goto :error
 
+echo =^=> Closing running instances...
+taskkill /f /im auto-clicker.exe 2>nul
+del /f /q dist\auto-clicker.exe 2>nul
+
 echo =^=> Building .exe...
 uv run pyinstaller auto-clicker-windows.spec --clean --noconfirm
 if errorlevel 1 goto :error
