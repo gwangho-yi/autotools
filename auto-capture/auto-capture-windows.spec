@@ -1,16 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_all
+
+numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all('numpy')
+mss_datas, mss_binaries, mss_hiddenimports = collect_all('mss')
+
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=[],
-    datas=[('assets/notify.wav', 'assets')],
+    binaries=[] + numpy_binaries + mss_binaries,
+    datas=[('assets/notify.wav', 'assets')] + numpy_datas + mss_datas,
     hiddenimports=[
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',
         'PySide6.QtNetwork',
-    ],
+    ] + numpy_hiddenimports + mss_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
