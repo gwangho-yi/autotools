@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
+from PyInstaller.utils.hooks import collect_submodules
 
 a = Analysis(
     ['main.py'],
@@ -13,18 +13,15 @@ a = Analysis(
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',
-        'pynput.mouse._win32',
-        'pynput.keyboard._win32',
-    ],
+    ] + collect_submodules('pynput'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=['tkinter', 'matplotlib', 'scipy', 'pandas'],
     noarchive=False,
-    cipher=block_cipher,
 )
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
@@ -35,10 +32,13 @@ exe = EXE(
     [],
     name='auto-clicker',
     debug=False,
+    bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
+    disable_windowed_traceback=False,
+    target_arch='arm64',
     icon='assets/icon.ico',
 )

@@ -1,7 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
-
 a = Analysis(
     ['main.py'],
     pathex=['.'],
@@ -18,10 +16,9 @@ a = Analysis(
     runtime_hooks=[],
     excludes=['tkinter', 'matplotlib', 'scipy', 'pandas'],
     noarchive=False,
-    cipher=block_cipher,
 )
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
@@ -34,13 +31,11 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
-    icon='assets/icon.ico',
     disable_windowed_traceback=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
+    target_arch='arm64',
+    icon='assets/icon.ico',
 )
