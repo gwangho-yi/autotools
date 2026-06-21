@@ -4,7 +4,7 @@ from PySide6.QtGui import QCursor
 
 from ui.launcher import Launcher
 from ui.tray import TrayIcon
-from ui.region_select import select_region
+from ui.region_select import select_regions
 from core.monitor import MonitorThread
 from core.ipc_client import IpcClient
 
@@ -20,57 +20,65 @@ def main():
         QMessageBox.critical(None, "auto-capture", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
         sys.exit(1)
 
-    monitor_thread: MonitorThread | None = None
+    monitor_threads: list[MonitorThread] = []
     ipc_client: IpcClient | None = None
 
     def on_start():
-        nonlocal monitor_thread
-        if monitor_thread and monitor_thread.isRunning():
+        nonlocal monitor_threads
+        if any(t.isRunning() for t in monitor_threads):
             return
 
-        region = select_region()
-        if not region or region["width"] < 8 or region["height"] < 8:
+        regions = select_regions()
+        if not regions:
             launcher.reset()
             return
 
-        thread = MonitorThread(region)
-        thread.motion_detected.connect(on_motion)
-        thread.stopped.connect(on_stopped)
-        thread.start()
-        monitor_thread = thread
+        threads = []
+        for region in regions:
+            t = MonitorThread(region)
+            t.motion_detected.connect(on_motion)
+            t.stopped.connect(on_stopped)
+            t.start()
+            threads.append(t)
+        monitor_threads = threads
 
-        launcher.set_monitoring(True)
+        launcher.set_monitoring(True, len(regions))
         tray.show()
-        tray.set_status("모니터링 중...")
+        tray.set_status(f"모니터링 중... ({len(regions)}개 영역)")
 
     def on_motion(x, y):
         QCursor.setPos(x, y)
         if ipc_client:
             ipc_client.send_motion(x, y)
-        if monitor_thread:
-            monitor_thread.pause()
+        for t in monitor_threads:
+            t.pause()
         launcher.set_paused()
 
     def on_pause():
-        if monitor_thread:
-            monitor_thread.pause()
+        for t in monitor_threads:
+            t.pause()
         launcher.set_paused()
         tray.set_status("일시정지")
 
     def on_resume():
-        if monitor_thread and not monitor_thread.isInterruptionRequested():
-            monitor_thread.resume()
-        launcher.set_monitoring(True)
-        tray.set_status("모니터링 중...")
+        for t in monitor_threads:
+            if not t.isInterruptionRequested():
+                t.resume()
+        count = len(monitor_threads)
+        launcher.set_monitoring(True, count)
+        tray.set_status(f"모니터링 중... ({count}개 영역)")
 
     def on_stopped():
-        tray.hide()
-        launcher.reset()
+        if not any(t.isRunning() for t in monitor_threads):
+            tray.hide()
+            launcher.reset()
 
     def on_stop():
-        if monitor_thread and monitor_thread.isRunning():
-            monitor_thread.requestInterruption()
-            monitor_thread.wait()
+        for t in monitor_threads:
+            if t.isRunning():
+                t.requestInterruption()
+        for t in monitor_threads:
+            t.wait()
 
     def on_connect_toggle(checked: bool) -> None:
         nonlocal ipc_client

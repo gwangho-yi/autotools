@@ -214,10 +214,11 @@ class Launcher(QWidget):
         self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#8888bb"))
         self._conn_btn.blockSignals(False)
 
-    def set_monitoring(self, active: bool) -> None:
+    def set_monitoring(self, active: bool, region_count: int = 1) -> None:
         if active:
             self._btn_stack.setCurrentIndex(1)
-            self.status_label.setText("모니터링 중...")
+            label = f"모니터링 중... ({region_count}개 영역)" if region_count > 1 else "모니터링 중..."
+            self.status_label.setText(label)
         else:
             self._btn_stack.setCurrentIndex(0)
             self.start_btn.setEnabled(True)
