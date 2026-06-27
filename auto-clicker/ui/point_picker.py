@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QApplication
-from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent, QTimer
+from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QGuiApplication
 
 
@@ -15,6 +15,20 @@ class _EscFilter(QObject):
             self._callback()
             return True
         return False
+
+
+class _EscRelay(QObject):
+    """pynput 스레드 → Qt 메인 스레드 안전 브릿지."""
+
+    _sig = Signal()
+
+    def __init__(self, callback):
+        super().__init__()
+        # QueuedConnection: 비-Qt 스레드에서 emit해도 메인 스레드에서 실행
+        self._sig.connect(callback, Qt.ConnectionType.QueuedConnection)
+
+    def notify(self):
+        self._sig.emit()
 
 
 class _PointPickerOverlay(QWidget):
@@ -80,7 +94,8 @@ def pick_point() -> tuple[int, int] | None:
     loop = QEventLoop()
     shared: dict = {"result": None, "loop": loop, "widgets": [],
                     "close_fn": None, "_closed": False,
-                    "_esc_filter": None, "_kb_listener": None}
+                    "_esc_filter": None, "_kb_listener": None,
+                    "_relay": None}
 
     def close_all():
         if shared["_closed"]:
@@ -105,14 +120,17 @@ def pick_point() -> tuple[int, int] | None:
     shared["_esc_filter"] = esc_filter
     QApplication.instance().installEventFilter(esc_filter)
 
-    # pynput 키보드 리스너 (Windows 등 포커스 없는 환경)
+    # pynput 키보드 리스너 (Windows: 포커스 없는 창에 키 이벤트 미전달)
     try:
         from pynput import keyboard as _kb
 
+        relay = _EscRelay(close_all)
+        shared["_relay"] = relay
+
         def _on_press(key):
             if key == _kb.Key.esc:
-                QTimer.singleShot(0, close_all)  # Qt 메인 스레드에서 실행
-                return False  # 리스너 중단
+                relay.notify()  # 비-Qt 스레드에서 안전하게 메인 스레드로 전달
+                return False    # 리스너 중단
 
         listener = _kb.Listener(on_press=_on_press)
         listener.start()
