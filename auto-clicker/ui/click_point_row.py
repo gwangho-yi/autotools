@@ -25,7 +25,31 @@ _SPIN_STYLE = """
         border-radius: 4px;
         padding: 1px 2px;
     }
-    QSpinBox::up-button, QSpinBox::down-button { width: 14px; }
+    QSpinBox::up-button {
+        width: 16px;
+        subcontrol-origin: border;
+        subcontrol-position: top right;
+        background-color: #3a3a6e;
+        border-left: 1px solid #4a4a7e;
+    }
+    QSpinBox::down-button {
+        width: 16px;
+        subcontrol-origin: border;
+        subcontrol-position: bottom right;
+        background-color: #3a3a6e;
+        border-left: 1px solid #4a4a7e;
+    }
+    QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+        background-color: #4a4a8e;
+    }
+    QSpinBox::up-arrow {
+        image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3IiBoZWlnaHQ9IjUiPjxwYXRoIGQ9Ik0wIDVMMy41IDBMNyA1eiIgZmlsbD0iI2FhYWFhYSIvPjwvc3ZnPg==");
+        width: 7px; height: 5px;
+    }
+    QSpinBox::down-arrow {
+        image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3IiBoZWlnaHQ9IjUiPjxwYXRoIGQ9Ik0wIDBMMy41IDVMNyAweiIgZmlsbD0iI2FhYWFhYSIvPjwvc3ZnPg==");
+        width: 7px; height: 5px;
+    }
 """
 
 _RADIO_STYLE = """
