@@ -1,19 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import collect_all
+
+pynput_datas, pynput_binaries, pynput_hiddenimports = collect_all('pynput')
 
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=[],
+    binaries=pynput_binaries,
     datas=[
         ('assets/notify.wav', 'assets'),
-    ],
+    ] + pynput_datas,
     hiddenimports=[
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',
-    ] + collect_submodules('pynput'),
+    ] + pynput_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
