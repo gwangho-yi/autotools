@@ -291,6 +291,7 @@ class MainWindow(QWidget):
         self._status_label.setText("실행 중...")
 
     def _on_stop(self) -> None:
+        self._action_btn.setEnabled(False)  # wait() 블로킹 중 큐에 쌓인 클릭 차단
         self._engine.stop()
         if self._capture_row:
             self._capture_blocked = True
