@@ -4,7 +4,6 @@ import numpy as np
 import mss
 from PySide6.QtCore import QThread, Signal
 
-from core.alert import alert
 
 INTERVAL = 0.5
 PIXEL_DIFF = 25
@@ -58,7 +57,6 @@ class MonitorThread(QThread):
                     cx = self.region["left"] + fx * self.region["width"]
                     cy = self.region["top"] + fy * self.region["height"]
                     self.motion_detected.emit(int(cx), int(cy))
-                    alert()
                     last_alert = now
                     prev = cur
                 else:

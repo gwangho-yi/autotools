@@ -9,3 +9,6 @@ dependencies = [
     "pyinstaller>=6.20.0",
     "pyside6>=6.11.1",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
