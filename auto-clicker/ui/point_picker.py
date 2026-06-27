@@ -17,7 +17,10 @@ class _PointPickerOverlay(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setCursor(Qt.CrossCursor)
         self.setMouseTracking(True)
+        self.setFocusPolicy(Qt.StrongFocus)
         self.show()
+        self.setFocus()
+        self.grabKeyboard()
         handle = self.windowHandle()
         if handle:
             handle.setScreen(screen)
