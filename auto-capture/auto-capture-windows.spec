@@ -9,7 +9,7 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=[] + numpy_binaries + mss_binaries,
-    datas=[('assets/notify.wav', 'assets')] + numpy_datas + mss_datas,
+    datas=[('assets', 'assets')] + numpy_datas + mss_datas,
     hiddenimports=[
         'PySide6.QtCore',
         'PySide6.QtGui',

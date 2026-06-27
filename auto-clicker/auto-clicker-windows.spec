@@ -9,7 +9,7 @@ a = Analysis(
     pathex=['.'],
     binaries=pynput_binaries,
     datas=[
-        ('assets/notify.wav', 'assets'),
+        ('assets', 'assets'),
     ] + pynput_datas,
     hiddenimports=[
         'PySide6.QtCore',
