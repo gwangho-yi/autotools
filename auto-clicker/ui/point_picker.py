@@ -1,3 +1,5 @@
+import sys
+
 from PySide6.QtWidgets import QWidget, QApplication
 from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QGuiApplication
@@ -18,13 +20,12 @@ class _EscFilter(QObject):
 
 
 class _EscRelay(QObject):
-    """pynput 스레드 → Qt 메인 스레드 안전 브릿지."""
+    """pynput 스레드 → Qt 메인 스레드 안전 브릿지 (Windows 전용)."""
 
     _sig = Signal()
 
     def __init__(self, callback):
         super().__init__()
-        # QueuedConnection: 비-Qt 스레드에서 emit해도 메인 스레드에서 실행
         self._sig.connect(callback, Qt.ConnectionType.QueuedConnection)
 
     def notify(self):
@@ -120,23 +121,26 @@ def pick_point() -> tuple[int, int] | None:
     shared["_esc_filter"] = esc_filter
     QApplication.instance().installEventFilter(esc_filter)
 
-    # pynput 키보드 리스너 (Windows: 포커스 없는 창에 키 이벤트 미전달)
-    try:
-        from pynput import keyboard as _kb
+    # pynput 키보드 리스너는 Windows 전용.
+    # macOS에서 pynput은 TSMGetInputSourceProperty를 백그라운드 스레드에서
+    # 호출해 크래시 발생 → macOS/Linux는 Qt 이벤트 필터만 사용.
+    if sys.platform == "win32":
+        try:
+            from pynput import keyboard as _kb
 
-        relay = _EscRelay(close_all)
-        shared["_relay"] = relay
+            relay = _EscRelay(close_all)
+            shared["_relay"] = relay
 
-        def _on_press(key):
-            if key == _kb.Key.esc:
-                relay.notify()  # 비-Qt 스레드에서 안전하게 메인 스레드로 전달
-                return False    # 리스너 중단
+            def _on_press(key):
+                if key == _kb.Key.esc:
+                    relay.notify()
+                    return False
 
-        listener = _kb.Listener(on_press=_on_press)
-        listener.start()
-        shared["_kb_listener"] = listener
-    except Exception:
-        pass
+            listener = _kb.Listener(on_press=_on_press)
+            listener.start()
+            shared["_kb_listener"] = listener
+        except Exception:
+            pass
 
     for screen in QGuiApplication.screens():
         overlay = _PointPickerOverlay(screen, shared)
