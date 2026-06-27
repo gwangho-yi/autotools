@@ -74,6 +74,8 @@ class ClickEngine(QThread):
             time.sleep(min(0.05, end - time.monotonic()))
 
     def _do_click(self, mouse: Controller, button: Button) -> None:
+        if self.isInterruptionRequested():
+            return
         try:
             mouse.press(button)
             time.sleep(_PRESS_HOLD_S)
