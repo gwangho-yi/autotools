@@ -1,0 +1,70 @@
+name: Release Windows x64
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v0.10)'
+        required: true
+        default: 'v0.10'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build auto-clicker
+        working-directory: auto-clicker
+        run: |
+          uv sync
+          uv add pyinstaller pynput
+          uv run python scripts/make_icon.py
+          uv run python scripts/make_sound.py
+          uv run pyinstaller auto-clicker-windows-x64.spec --clean --noconfirm
+
+      - name: Build auto-capture
+        working-directory: auto-capture
+        run: |
+          uv sync
+          uv add pyinstaller
+          uv run python scripts/make_icon.py
+          uv run python scripts/make_sound.py
+          uv run pyinstaller auto-capture-windows-x64.spec --clean --noconfirm
+
+      - name: Rename with version
+        shell: bash
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          cp auto-clicker/dist/auto-clicker.exe "auto-clicker-${TAG}.exe"
+          cp auto-capture/dist/auto-capture.exe "auto-capture-${TAG}.exe"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: Release ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            auto-clicker-${{ steps.ver.outputs.tag }}.exe
+            auto-capture-${{ steps.ver.outputs.tag }}.exe
