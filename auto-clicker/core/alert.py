@@ -19,7 +19,7 @@ def alert(volume: float = 1.0) -> None:
         subprocess.Popen(["afplay", "-v", str(volume), str(_SOUND)])
     elif sys.platform == "win32":
         import winsound
-        winsound.PlaySound(str(_SOUND), winsound.SND_FILENAME | winsound.SND_ASYNC)
+        winsound.PlaySound(str(_SOUND), winsound.SND_FILENAME)
 
 
 class AlertRepeater(QThread):
