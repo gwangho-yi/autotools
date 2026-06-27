@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import QWidget, QApplication
-from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent
+from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent, QTimer
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QGuiApplication
 
 
 class _EscFilter(QObject):
-    """앱 레벨에서 ESC 키를 가로채는 이벤트 필터."""
+    """Qt 레벨 ESC 필터 (macOS/Linux 대응)."""
 
     def __init__(self, callback):
         super().__init__()
@@ -78,11 +78,21 @@ class _PointPickerOverlay(QWidget):
 def pick_point() -> tuple[int, int] | None:
     """전체 화면 오버레이를 표시하고 사용자가 클릭한 글로벌 좌표를 반환. ESC시 None."""
     loop = QEventLoop()
-    shared = {"result": None, "loop": loop, "widgets": [], "close_fn": None}
+    shared: dict = {"result": None, "loop": loop, "widgets": [],
+                    "close_fn": None, "_closed": False,
+                    "_esc_filter": None, "_kb_listener": None}
 
     def close_all():
+        if shared["_closed"]:
+            return
+        shared["_closed"] = True
+        if shared["_kb_listener"] is not None:
+            try:
+                shared["_kb_listener"].stop()
+            except Exception:
+                pass
         app = QApplication.instance()
-        if app and shared.get("_esc_filter"):
+        if app and shared["_esc_filter"]:
             app.removeEventFilter(shared["_esc_filter"])
         for w in shared["widgets"]:
             w.close()
@@ -90,9 +100,25 @@ def pick_point() -> tuple[int, int] | None:
 
     shared["close_fn"] = close_all
 
+    # Qt 이벤트 필터 (macOS/Linux)
     esc_filter = _EscFilter(close_all)
     shared["_esc_filter"] = esc_filter
     QApplication.instance().installEventFilter(esc_filter)
+
+    # pynput 키보드 리스너 (Windows 등 포커스 없는 환경)
+    try:
+        from pynput import keyboard as _kb
+
+        def _on_press(key):
+            if key == _kb.Key.esc:
+                QTimer.singleShot(0, close_all)  # Qt 메인 스레드에서 실행
+                return False  # 리스너 중단
+
+        listener = _kb.Listener(on_press=_on_press)
+        listener.start()
+        shared["_kb_listener"] = listener
+    except Exception:
+        pass
 
     for screen in QGuiApplication.screens():
         overlay = _PointPickerOverlay(screen, shared)
