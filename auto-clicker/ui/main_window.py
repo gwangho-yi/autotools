@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
 
+from core.alert import AlertRepeater
 from core.models import ClickPoint
 from core.click_engine import ClickEngine
 from core.ipc_server import IpcServer
@@ -52,6 +53,16 @@ _BTN_WAITING = """
     }
 """
 
+_BTN_MUTE = """
+    QPushButton {
+        background-color: transparent;
+        color: #f0a500; border: 1px solid #f0a500;
+        border-radius: 8px; font-size: 14px; font-weight: bold;
+        padding: 8px 20px;
+    }
+    QPushButton:hover { background-color: rgba(240,165,0,0.1); }
+"""
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -60,6 +71,7 @@ class MainWindow(QWidget):
         self._capture_row: CaptureRow | None = None
         self._capture_blocked = False
         self._engine = ClickEngine()
+        self._alert_repeater = AlertRepeater()
         self._ipc = IpcServer(self)
         self._build_ui()
         self._engine.sequence_finished.connect(
@@ -132,6 +144,11 @@ class MainWindow(QWidget):
         self._action_btn.setStyleSheet(_BTN_PRIMARY)
         self._action_btn.clicked.connect(self._on_action_clicked)
         bottom.addWidget(self._action_btn)
+        self._mute_btn = QPushButton("🔔 알림 중지")
+        self._mute_btn.setStyleSheet(_BTN_MUTE)
+        self._mute_btn.clicked.connect(self._on_mute_clicked)
+        self._mute_btn.hide()
+        bottom.addWidget(self._mute_btn)
         bottom.addStretch()
         root.addLayout(bottom)
 
@@ -257,12 +274,19 @@ class MainWindow(QWidget):
             self._status_label.setText("중지됨.")
         self._update_action_btn()
 
+    def _on_mute_clicked(self) -> None:
+        self._alert_repeater.stop()
+        self._mute_btn.hide()
+
     def _on_sequence_finished(self) -> None:
         if self._capture_row:
             self._status_label.setText("완료. 다음 신호 대기 중...")
         else:
             self._status_label.setText("완료.")
         self._update_action_btn()
+        if not self._alert_repeater.isRunning():
+            self._alert_repeater.start()
+            self._mute_btn.show()
 
     def _on_motion_from_capture(self, _x: int, _y: int) -> None:
         if self._engine.isRunning() or self._capture_blocked:
@@ -277,4 +301,6 @@ class MainWindow(QWidget):
         self._ipc.stop()
         if self._engine.isRunning():
             self._engine.stop()
+        if self._alert_repeater.isRunning():
+            self._alert_repeater.stop()
         event.accept()

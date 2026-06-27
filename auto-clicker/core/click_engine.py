@@ -2,7 +2,6 @@ import time
 from PySide6.QtCore import QThread, Signal
 from pynput.mouse import Button, Controller
 
-from core.alert import alert
 from core.models import ClickPoint
 
 _PRESS_HOLD_S = 0.02   # press→release hold time (20ms)
@@ -65,7 +64,6 @@ class ClickEngine(QThread):
                 self._do_click(mouse, button)
 
         if not self.isInterruptionRequested():
-            alert()
             self.sequence_finished.emit()
 
     def _interruptible_sleep(self, seconds: float) -> None:
