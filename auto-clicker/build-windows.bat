@@ -8,7 +8,7 @@ uv add pyinstaller pynput
 if errorlevel 1 goto :error
 
 echo =^=> Running tests...
-uv run python -m pytest tests/ -v
+uv run --with pytest --with pytest-qt python -m pytest tests/ -v
 if errorlevel 1 (echo Tests failed. Fix tests before building. & pause & exit /b 1)
 
 echo =^=> Generating icon...
