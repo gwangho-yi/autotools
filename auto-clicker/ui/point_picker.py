@@ -1,7 +1,20 @@
-import sys
-from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QEventLoop, QPoint
+from PySide6.QtWidgets import QWidget, QApplication
+from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QGuiApplication
+
+
+class _EscFilter(QObject):
+    """앱 레벨에서 ESC 키를 가로채는 이벤트 필터."""
+
+    def __init__(self, callback):
+        super().__init__()
+        self._callback = callback
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Escape:
+            self._callback()
+            return True
+        return False
 
 
 class _PointPickerOverlay(QWidget):
@@ -17,10 +30,7 @@ class _PointPickerOverlay(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setCursor(Qt.CrossCursor)
         self.setMouseTracking(True)
-        self.setFocusPolicy(Qt.StrongFocus)
         self.show()
-        self.setFocus()
-        self.grabKeyboard()
         handle = self.windowHandle()
         if handle:
             handle.setScreen(screen)
@@ -62,24 +72,27 @@ class _PointPickerOverlay(QWidget):
         pos = event.position().toPoint()
         origin = self._screen.geometry().topLeft()
         self._shared["result"] = (pos.x() + origin.x(), pos.y() + origin.y())
-        self._close_all()
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self._shared["result"] = None
-            self._close_all()
-
-    def _close_all(self):
-        for w in self._shared["widgets"]:
-            w.close()
-        if self._shared["loop"]:
-            self._shared["loop"].quit()
+        self._shared["close_fn"]()
 
 
 def pick_point() -> tuple[int, int] | None:
     """전체 화면 오버레이를 표시하고 사용자가 클릭한 글로벌 좌표를 반환. ESC시 None."""
     loop = QEventLoop()
-    shared = {"result": None, "loop": loop, "widgets": []}
+    shared = {"result": None, "loop": loop, "widgets": [], "close_fn": None}
+
+    def close_all():
+        app = QApplication.instance()
+        if app and shared.get("_esc_filter"):
+            app.removeEventFilter(shared["_esc_filter"])
+        for w in shared["widgets"]:
+            w.close()
+        loop.quit()
+
+    shared["close_fn"] = close_all
+
+    esc_filter = _EscFilter(close_all)
+    shared["_esc_filter"] = esc_filter
+    QApplication.instance().installEventFilter(esc_filter)
 
     for screen in QGuiApplication.screens():
         overlay = _PointPickerOverlay(screen, shared)
