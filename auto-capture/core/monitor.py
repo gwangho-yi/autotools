@@ -20,11 +20,13 @@ class MonitorThread(QThread):
         self.region = region
         self._pause_event = threading.Event()
         self._pause_event.set()  # running by default
+        self._needs_reset = False
 
     def pause(self) -> None:
         self._pause_event.clear()
 
     def resume(self) -> None:
+        self._needs_reset = True  # resume 시 prev 갱신 예약
         self._pause_event.set()
 
     def run(self):
@@ -39,6 +41,14 @@ class MonitorThread(QThread):
             prev = np.array(sct.grab(self.region), dtype=np.int16)[:, :, :3]
             while not self.isInterruptionRequested():
                 if not self._pause_event.wait(timeout=0.1):
+                    continue
+                # resume 후 첫 루프: prev를 현재 화면으로 갱신하고 비교 건너뜀
+                if self._needs_reset:
+                    self._needs_reset = False
+                    try:
+                        prev = np.array(sct.grab(self.region), dtype=np.int16)[:, :, :3]
+                    except Exception:
+                        break
                     continue
                 time.sleep(INTERVAL)
                 try:
