@@ -77,6 +77,9 @@ class MainWindow(QWidget):
         self._engine.sequence_finished.connect(
             self._on_sequence_finished, Qt.ConnectionType.QueuedConnection
         )
+        self._engine.finished.connect(
+            self._update_action_btn, Qt.ConnectionType.QueuedConnection
+        )
         self._ipc.motion_received.connect(
             self._on_motion_from_capture, Qt.ConnectionType.QueuedConnection
         )
