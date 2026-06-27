@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QApplication, QSlider
+    QScrollArea, QApplication, QSlider, QSpinBox
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QGuiApplication
 
 from core.alert import AlertRepeater
@@ -63,6 +63,16 @@ _BTN_MUTE = """
     QPushButton:hover { background-color: rgba(240,165,0,0.1); }
 """
 
+_SPINBOX_STYLE = """
+    QSpinBox {
+        background-color: #2a2a4e; color: #cccccc;
+        border: 1px solid #3a3a6e; border-radius: 4px;
+        font-size: 13px; padding: 2px 4px;
+    }
+    QSpinBox:disabled { color: #444466; border-color: #2a2a4e; }
+    QSpinBox::up-button, QSpinBox::down-button { width: 16px; }
+"""
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -73,6 +83,8 @@ class MainWindow(QWidget):
         self._engine = ClickEngine()
         self._alert_repeater = AlertRepeater()
         self._ipc = IpcServer(self)
+        self._delay_timer: QTimer | None = None
+        self._countdown_remaining: int = 0
         self._build_ui()
         self._engine.sequence_finished.connect(
             self._on_sequence_finished, Qt.ConnectionType.QueuedConnection
@@ -141,6 +153,40 @@ class MainWindow(QWidget):
         self._add_btn.clicked.connect(self._on_add_point)
         root.addWidget(self._add_btn)
 
+        # Delay start row (hidden when capture is connected)
+        self._delay_row = QWidget()
+        delay_layout = QHBoxLayout(self._delay_row)
+        delay_layout.setContentsMargins(0, 0, 0, 0)
+        delay_layout.setSpacing(6)
+
+        delay_lbl = QLabel("시작 지연:")
+        delay_lbl.setStyleSheet("color: #aaaaaa; font-size: 12px;")
+        delay_layout.addWidget(delay_lbl)
+
+        self._delay_h = QSpinBox()
+        self._delay_h.setRange(0, 23)
+        self._delay_h.setSuffix(" 시")
+        self._delay_h.setFixedWidth(72)
+        self._delay_h.setStyleSheet(_SPINBOX_STYLE)
+        delay_layout.addWidget(self._delay_h)
+
+        self._delay_m = QSpinBox()
+        self._delay_m.setRange(0, 59)
+        self._delay_m.setSuffix(" 분")
+        self._delay_m.setFixedWidth(72)
+        self._delay_m.setStyleSheet(_SPINBOX_STYLE)
+        delay_layout.addWidget(self._delay_m)
+
+        self._delay_s = QSpinBox()
+        self._delay_s.setRange(0, 59)
+        self._delay_s.setSuffix(" 초")
+        self._delay_s.setFixedWidth(72)
+        self._delay_s.setStyleSheet(_SPINBOX_STYLE)
+        delay_layout.addWidget(self._delay_s)
+
+        delay_layout.addStretch()
+        root.addWidget(self._delay_row)
+
         # Bottom row
         bottom = QHBoxLayout()
         self._action_btn = QPushButton("▶ 시작")
@@ -195,6 +241,11 @@ class MainWindow(QWidget):
             geo.center().y() - self.height() // 2,
         )
 
+    def _get_delay_seconds(self) -> int:
+        return (self._delay_h.value() * 3600
+                + self._delay_m.value() * 60
+                + self._delay_s.value())
+
     def _on_add_point(self) -> None:
         self.hide()
         QApplication.processEvents()
@@ -237,7 +288,11 @@ class MainWindow(QWidget):
             r.set_index(i + offset)
 
     def _update_action_btn(self) -> None:
-        if self._engine.isRunning():
+        if self._delay_timer is not None:
+            self._action_btn.setText("■ 취소")
+            self._action_btn.setStyleSheet(_BTN_DANGER)
+            self._action_btn.setEnabled(True)
+        elif self._engine.isRunning():
             self._action_btn.setText("■ 중지")
             self._action_btn.setStyleSheet(_BTN_DANGER)
             self._action_btn.setEnabled(True)
@@ -252,7 +307,7 @@ class MainWindow(QWidget):
             self._action_btn.setEnabled(True)
 
     def _on_action_clicked(self) -> None:
-        if self._engine.isRunning():
+        if self._delay_timer is not None or self._engine.isRunning():
             self._on_stop()
         else:
             self._on_start()
@@ -267,6 +322,7 @@ class MainWindow(QWidget):
         row.show()
         self._renumber_rows()
         self._capture_blocked = False
+        self._delay_row.hide()
         self._update_action_btn()
         self._status_label.setText("auto-capture 연결됨 — 신호 대기 중...")
 
@@ -278,6 +334,7 @@ class MainWindow(QWidget):
         self._capture_row = None
         self._renumber_rows()
         self._capture_blocked = False
+        self._delay_row.show()
         self._update_action_btn()
         if not self._engine.isRunning():
             self._status_label.setText("")
@@ -288,12 +345,54 @@ class MainWindow(QWidget):
             return
         if self._engine.isRunning():
             return
+        total_s = self._get_delay_seconds()
+        if total_s > 0:
+            self._start_countdown(total_s)
+        else:
+            self._start_engine()
+
+    def _start_countdown(self, total_s: int) -> None:
+        self._countdown_remaining = total_s
+        self._delay_timer = QTimer(self)
+        self._delay_timer.timeout.connect(self._on_countdown_tick)
+        self._delay_row.setEnabled(False)
+        self._update_action_btn()
+        self._update_countdown_label()
+        self._delay_timer.start(1000)
+
+    def _on_countdown_tick(self) -> None:
+        self._countdown_remaining -= 1
+        if self._countdown_remaining <= 0:
+            self._stop_countdown()
+            self._start_engine()
+        else:
+            self._update_countdown_label()
+
+    def _update_countdown_label(self) -> None:
+        s = self._countdown_remaining
+        h, rem = divmod(s, 3600)
+        m, sec = divmod(rem, 60)
+        self._status_label.setText(f"시작까지 {h:02d}:{m:02d}:{sec:02d} 남음...")
+
+    def _stop_countdown(self) -> None:
+        if self._delay_timer is not None:
+            self._delay_timer.stop()
+            self._delay_timer.deleteLater()
+            self._delay_timer = None
+        self._delay_row.setEnabled(True)
+
+    def _start_engine(self) -> None:
         self._engine.set_points([r.point for r in self._rows])
         self._engine.start_standalone()
         self._update_action_btn()
         self._status_label.setText("실행 중...")
 
     def _on_stop(self) -> None:
+        if self._delay_timer is not None:
+            self._stop_countdown()
+            self._status_label.setText("취소됨.")
+            self._update_action_btn()
+            return
         self._action_btn.setEnabled(False)  # wait() 블로킹 중 큐에 쌓인 클릭 차단
         self._engine.stop()
         if self._capture_row:
@@ -331,6 +430,7 @@ class MainWindow(QWidget):
         self._status_label.setText("auto-capture 신호 수신 → 클릭 실행 중...")
 
     def closeEvent(self, event) -> None:
+        self._stop_countdown()
         self._ipc.stop()
         if self._engine.isRunning():
             self._engine.stop()
