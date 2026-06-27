@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QApplication
+    QScrollArea, QApplication, QSlider
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
@@ -152,6 +152,31 @@ class MainWindow(QWidget):
         bottom.addStretch()
         root.addLayout(bottom)
 
+        # Volume row
+        vol_row = QHBoxLayout()
+        vol_label = QLabel("볼륨:")
+        vol_label.setStyleSheet("color: #aaaaaa; font-size: 12px;")
+        vol_label.setFixedWidth(36)
+        vol_row.addWidget(vol_label)
+        self._vol_slider = QSlider(Qt.Horizontal)
+        self._vol_slider.setRange(0, 100)
+        self._vol_slider.setValue(100)
+        self._vol_slider.setStyleSheet("""
+            QSlider::groove:horizontal { height: 4px; background: #2a2a4e; border-radius: 2px; }
+            QSlider::sub-page:horizontal { background: #4ecca3; border-radius: 2px; }
+            QSlider::handle:horizontal {
+                width: 12px; height: 12px; margin: -4px 0;
+                background: #4ecca3; border-radius: 6px;
+            }
+        """)
+        self._vol_slider.valueChanged.connect(self._on_volume_changed)
+        vol_row.addWidget(self._vol_slider)
+        self._vol_pct_label = QLabel("100%")
+        self._vol_pct_label.setStyleSheet("color: #aaaaaa; font-size: 12px;")
+        self._vol_pct_label.setFixedWidth(36)
+        vol_row.addWidget(self._vol_pct_label)
+        root.addLayout(vol_row)
+
         # Status
         self._status_label = QLabel("")
         self._status_label.setStyleSheet("color: #666666; font-size: 11px;")
@@ -273,6 +298,10 @@ class MainWindow(QWidget):
         else:
             self._status_label.setText("중지됨.")
         self._update_action_btn()
+
+    def _on_volume_changed(self, value: int) -> None:
+        self._vol_pct_label.setText(f"{value}%")
+        self._alert_repeater.volume = value / 100
 
     def _on_mute_clicked(self) -> None:
         self._alert_repeater.stop()

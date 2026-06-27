@@ -13,9 +13,10 @@ else:
 _SOUND = _base / "assets" / "notify.wav"
 
 
-def alert() -> None:
+def alert(volume: float = 1.0) -> None:
+    """volume: 0.0(무음) ~ 1.0(최대). macOS afplay -v 옵션 사용."""
     if sys.platform == "darwin":
-        subprocess.Popen(["afplay", str(_SOUND)])
+        subprocess.Popen(["afplay", "-v", str(volume), str(_SOUND)])
     elif sys.platform == "win32":
         import winsound
         winsound.PlaySound(str(_SOUND), winsound.SND_FILENAME | winsound.SND_ASYNC)
@@ -27,10 +28,11 @@ class AlertRepeater(QThread):
     def __init__(self, interval_s: float = 15, parent=None):
         super().__init__(parent)
         self._interval_s = interval_s
+        self.volume: float = 1.0
 
     def run(self) -> None:
         while not self.isInterruptionRequested():
-            alert()
+            alert(self.volume)
             end = time.monotonic() + self._interval_s
             while time.monotonic() < end:
                 if self.isInterruptionRequested():
