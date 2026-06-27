@@ -23,7 +23,8 @@ def main():
         for i in range(n):
             t = i / SAMPLE_RATE
             env = math.exp(-t * 8) * vol
-            frames.append(int(env * math.sin(2 * math.pi * freq * t) * 32767))
+            sample = int(env * math.sin(2 * math.pi * freq * t) * 32767 * 1.5)
+            frames.append(max(-32767, min(32767, sample)))
     with wave.open(str(OUTPUT), "w") as f:
         f.setnchannels(1)
         f.setsampwidth(2)
