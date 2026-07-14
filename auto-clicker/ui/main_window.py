@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QApplication, QSlider, QSpinBox, QTabWidget
+    QScrollArea, QApplication, QSlider, QSpinBox
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QGuiApplication
@@ -133,29 +133,10 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("auto-clicker")
-        self.setMinimumSize(650, 520)
+        self.setMinimumSize(650, 760)
         self.setStyleSheet("background-color: #1a1a2e;")
 
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-
-        tabs = QTabWidget()
-        tabs.setStyleSheet("""
-            QTabWidget::pane { border: none; }
-            QTabBar::tab {
-                background: #2a2a4e; color: #888888;
-                padding: 8px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px;
-            }
-            QTabBar::tab:selected { background: #4ecca3; color: #1a1a2e; font-weight: bold; }
-        """)
-        tabs.addTab(self._build_clicker_page(), "순서 클릭")
-        self.color_tab = ColorClickerTab()
-        tabs.addTab(self.color_tab, "컬러 클리커")
-        outer.addWidget(tabs)
-
-    def _build_clicker_page(self) -> QWidget:
-        page = QWidget()
-        root = QVBoxLayout(page)
+        root = QVBoxLayout(self)
         root.setSpacing(10)
         root.setContentsMargins(20, 20, 20, 16)
 
@@ -277,7 +258,14 @@ class MainWindow(QWidget):
         self._status_label.setStyleSheet("color: #666666; font-size: 11px;")
         root.addWidget(self._status_label)
 
-        return page
+        # 컬러 감지 연동 섹션 (항상 보임)
+        divider = QLabel("─── 컬러 감지 연동 ───")
+        divider.setAlignment(Qt.AlignCenter)
+        divider.setStyleSheet("color: #444466; font-size: 11px; margin-top: 6px;")
+        root.addWidget(divider)
+
+        self.color_tab = ColorClickerTab()
+        root.addWidget(self.color_tab)
 
     def _center(self) -> None:
         screen = QGuiApplication.primaryScreen()
