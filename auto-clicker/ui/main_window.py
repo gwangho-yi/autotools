@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QApplication, QSlider, QSpinBox
+    QScrollArea, QApplication, QSlider, QSpinBox, QTabWidget
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QGuiApplication
@@ -36,10 +36,12 @@ def _spinbox_style() -> str:
 from core.alert import AlertRepeater
 from core.models import ClickPoint
 from core.click_engine import ClickEngine
+from core.continuous_click_engine import ContinuousClickEngine
 from core.ipc_server import IpcServer
 from ui.point_picker import pick_point
 from ui.click_point_row import ClickPointRow
 from ui.capture_row import CaptureRow
+from ui.color_clicker_tab import ColorClickerTab
 
 _BTN_PRIMARY = """
     QPushButton {
@@ -100,6 +102,7 @@ class MainWindow(QWidget):
         self._capture_row: CaptureRow | None = None
         self._capture_blocked = False
         self._engine = ClickEngine()
+        self._continuous: ContinuousClickEngine | None = None
         self._alert_repeater = AlertRepeater()
         self._ipc = IpcServer(self)
         self._delay_timer: QTimer | None = None
@@ -120,15 +123,39 @@ class MainWindow(QWidget):
         self._ipc.client_disconnected.connect(
             self._on_client_disconnected, Qt.ConnectionType.QueuedConnection
         )
+        self.color_tab.start_requested.connect(self._on_color_start)
+        self.color_tab.stop_requested.connect(self._on_color_stop)
+        self._ipc.color_match_received.connect(
+            self._on_color_match, Qt.ConnectionType.QueuedConnection
+        )
         self._ipc.start()
         self._center()
 
     def _build_ui(self) -> None:
         self.setWindowTitle("auto-clicker")
-        self.setMinimumSize(650, 460)
+        self.setMinimumSize(650, 520)
         self.setStyleSheet("background-color: #1a1a2e;")
 
-        root = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        tabs = QTabWidget()
+        tabs.setStyleSheet("""
+            QTabWidget::pane { border: none; }
+            QTabBar::tab {
+                background: #2a2a4e; color: #888888;
+                padding: 8px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px;
+            }
+            QTabBar::tab:selected { background: #4ecca3; color: #1a1a2e; font-weight: bold; }
+        """)
+        tabs.addTab(self._build_clicker_page(), "순서 클릭")
+        self.color_tab = ColorClickerTab()
+        tabs.addTab(self.color_tab, "컬러 클리커")
+        outer.addWidget(tabs)
+
+    def _build_clicker_page(self) -> QWidget:
+        page = QWidget()
+        root = QVBoxLayout(page)
         root.setSpacing(10)
         root.setContentsMargins(20, 20, 20, 16)
 
@@ -249,6 +276,8 @@ class MainWindow(QWidget):
         self._status_label = QLabel("")
         self._status_label.setStyleSheet("color: #666666; font-size: 11px;")
         root.addWidget(self._status_label)
+
+        return page
 
     def _center(self) -> None:
         screen = QGuiApplication.primaryScreen()
@@ -439,6 +468,40 @@ class MainWindow(QWidget):
             self._alert_repeater.start()
             self._mute_btn.show()
 
+    def _on_color_start(self) -> None:
+        if self.color_tab.point is None:
+            return
+        if self._engine.isRunning():
+            return
+        if self._continuous is not None and self._continuous.isRunning():
+            return
+        x, y = self.color_tab.point
+        self._continuous = ContinuousClickEngine(
+            x, y, self.color_tab.min_ms, self.color_tab.max_ms,
+            self.color_tab.click_type,
+        )
+        self._continuous.start()
+        self.color_tab.set_running(True)
+        self.color_tab.set_status("연속 클릭 중... (컬러 감지 대기)")
+
+    def _on_color_stop(self) -> None:
+        if self._continuous is not None and self._continuous.isRunning():
+            self._continuous.stop()
+        self.color_tab.set_running(False)
+        self.color_tab.set_status("중지됨.")
+
+    def _on_color_match(self, x: int, y: int) -> None:
+        # 이미 시퀀스 실행 중이면 무시(상호배타)
+        if self._engine.isRunning():
+            return
+        # 연속 클릭 정지 후 감지 좌표 클릭 → 기존 포인트 시퀀스
+        if self._continuous is not None and self._continuous.isRunning():
+            self._continuous.stop()
+        self.color_tab.set_running(False)
+        self._engine.set_points([r.point for r in self._rows])
+        self._engine.start_from_color(x, y, self.color_tab.click_type)
+        self.color_tab.set_status(f"감지 ({x}, {y}) → 클릭 시퀀스 실행 중...")
+
     def _on_motion_from_capture(self, _x: int, _y: int) -> None:
         if self._engine.isRunning() or self._capture_blocked:
             return
@@ -451,6 +514,8 @@ class MainWindow(QWidget):
     def closeEvent(self, event) -> None:
         self._stop_countdown()
         self._ipc.stop()
+        if self._continuous is not None and self._continuous.isRunning():
+            self._continuous.stop()
         if self._engine.isRunning():
             self._engine.stop()
         if self._alert_repeater.isRunning():
