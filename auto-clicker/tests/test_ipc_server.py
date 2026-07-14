@@ -39,3 +39,22 @@ def test_invalid_message_ignored(qtbot):
         server.stop()
 
     assert received == []
+
+
+def test_color_match_signal_emitted(qtbot):
+    from core.ipc_server import IpcServer
+
+    server = IpcServer()
+    server.start()
+    time.sleep(0.15)
+
+    try:
+        with qtbot.waitSignal(server.color_match_received, timeout=2000) as blocker:
+            with socket.create_connection(("127.0.0.1", 54321), timeout=1.0) as s:
+                s.sendall(
+                    json.dumps({"event": "color_match", "x": 111, "y": 222}).encode() + b"\n"
+                )
+    finally:
+        server.stop()
+
+    assert blocker.args == [111, 222]
