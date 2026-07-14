@@ -26,6 +26,15 @@ class IpcClient(QThread):
                 except OSError:
                     pass
 
+    def send_color_match(self, x: int, y: int) -> None:
+        msg = (json.dumps({"event": "color_match", "x": x, "y": y}) + "\n").encode()
+        with self._lock:
+            if self._sock:
+                try:
+                    self._sock.sendall(msg)
+                except OSError:
+                    pass
+
     def run(self) -> None:
         self._running = True
         try:
