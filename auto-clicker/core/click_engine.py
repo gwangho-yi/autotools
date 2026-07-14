@@ -15,6 +15,7 @@ class ClickEngine(QThread):
         super().__init__(parent)
         self._points: list[ClickPoint] = []
         self._capture_click_type: str | None = None
+        self._color_target: tuple[int, int, str] | None = None
 
     def set_points(self, points: list[ClickPoint]) -> None:
         self._points = list(points)
@@ -23,12 +24,21 @@ class ClickEngine(QThread):
         if self.isRunning():
             return
         self._capture_click_type = None
+        self._color_target = None
         self.start()
 
     def start_from_capture(self, click_type: str = "left") -> None:
         if self.isRunning():
             return
         self._capture_click_type = click_type
+        self._color_target = None
+        self.start()
+
+    def start_from_color(self, x: int, y: int, click_type: str = "left") -> None:
+        if self.isRunning():
+            return
+        self._capture_click_type = None
+        self._color_target = (x, y, click_type)
         self.start()
 
     def run(self) -> None:
@@ -45,6 +55,25 @@ class ClickEngine(QThread):
                 btn = Button.left if self._capture_click_type == "left" else Button.right
                 self._do_click(mouse, btn)
 
+        if self._color_target is not None:
+            cx, cy, ctype = self._color_target
+            self._color_target = None
+            mouse.position = (cx, cy)
+            time.sleep(_MOVE_SETTLE_S)
+            if ctype == "double":
+                self._do_click(mouse, Button.left)
+                time.sleep(_PRESS_HOLD_S)
+                self._do_click(mouse, Button.left)
+            else:
+                btn = Button.left if ctype == "left" else Button.right
+                self._do_click(mouse, btn)
+
+        self._run_points_sequence(mouse)
+
+        if not self.isInterruptionRequested():
+            self.sequence_finished.emit()
+
+    def _run_points_sequence(self, mouse: Controller) -> None:
         for point in self._points:
             if self.isInterruptionRequested():
                 break
@@ -62,9 +91,6 @@ class ClickEngine(QThread):
             else:
                 button = Button.left if point.click_type == "left" else Button.right
                 self._do_click(mouse, button)
-
-        if not self.isInterruptionRequested():
-            self.sequence_finished.emit()
 
     def _interruptible_sleep(self, seconds: float) -> None:
         end = time.monotonic() + seconds

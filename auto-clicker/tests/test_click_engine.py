@@ -85,3 +85,20 @@ def test_sequence_finished_not_emitted_on_interrupt(qtbot):
 
         with qtbot.assertNotEmitted(engine.sequence_finished):
             engine.stop()
+
+
+def test_start_from_color_moves_to_coord_then_sequence(qtbot):
+    mock_mouse = MagicMock()
+    with patch("core.click_engine.Controller", return_value=mock_mouse):
+        from core.click_engine import ClickEngine
+
+        engine = ClickEngine()
+        engine.set_points([ClickPoint(x=100, y=200, ms=10, click_type="left")])
+
+        with qtbot.waitSignal(engine.sequence_finished, timeout=3000):
+            engine.start_from_color(777, 888, "left")
+        engine.wait()
+
+    # 감지 좌표 클릭 1 + 시퀀스 포인트 1 = press 2회
+    assert mock_mouse.press.call_count == 2
+    assert mock_mouse.release.call_count == 2
