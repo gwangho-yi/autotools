@@ -34,7 +34,7 @@
 ### auto-capture — 신규 파일
 
 - **`core/color_monitor.py` → `ColorMonitorThread(QThread)`**: `MonitorThread`와 동일한 mss 폴링 구조(0.5s 간격, 감시 영역 기반)를 따르되, 프레임 간 diff 대신 목표 RGB와의 채널별 최대 차이(`max(|Δr|,|Δg|,|Δb|) <= tolerance`)로 매칭 픽셀을 탐색한다. 노이즈 방지를 위해 기존 `MIN_CHANGED`/`ALERT_COOLDOWN` 패턴을 그대로 차용 — 매칭 픽셀 수가 최소 임계값 이상일 때만, 그리고 마지막 감지 후 쿨다운이 지났을 때만 감지로 판단한다. 매칭 시 `color_detected(x, y)` 시그널 발신(매칭 마스크의 중심 좌표 — 기존 `motion_detected` 계산 방식과 동일한 스타일).
-- **`ui/color_picker.py` → `pick_pixel_color()`**: `point_picker.py`의 풀스크린 오버레이 패턴을 재사용하되, 클릭 시 해당 좌표의 실제 화면 RGB를 mss로 샘플링해 `(x, y, (r, g, b))`를 반환한다.
+- **`ui/color_picker.py` → `pick_pixel_color()`**: `point_picker.py`의 풀스크린 오버레이 패턴을 재사용하되, 클릭 시 해당 좌표의 실제 화면 RGB를 mss로 샘플링해 `(x, y, (r, g, b))`를 반환한다. 마우스 이동 시마다 **돋보기(loupe) 패널**을 커서 오른쪽에 실시간 렌더링한다 — 커서 주변 15×15px 영역을 mss로 캡처해 8배 확대(nearest-neighbor, 결과 120×120px)하고, 중앙(= 실제 선택될 픽셀)은 강조 테두리로 표시, 하단에 현재 RGB 값을 텍스트로 함께 표시한다. 커서가 화면 우측 경계에 가까우면(패널 폭만큼 여유가 없으면) 패널을 커서 왼쪽으로 flip한다.
 - **`ui/color_capture_tab.py` → `ColorCaptureTab` 위젯**: RGB 샘플 버튼 + 색상 스와치 미리보기, 허용오차 스핀박스, 감시영역 지정 버튼(기존 `region_select.select_region()` 재사용), 시작/정지 버튼, 상태 라벨.
 
 ### auto-capture — 기존 파일 확장
@@ -55,7 +55,7 @@
 
 ## 3. 데이터 흐름
 
-1. auto-capture 컬러 탭: RGB 픽셀 선택(`pick_pixel_color`) → 스와치 표시 / 감시영역 지정(`region_select` 재사용).
+1. auto-capture 컬러 탭: RGB 픽셀 선택(`pick_pixel_color`, 커서 이동 중 돋보기 패널로 확대 미리보기) → 스와치 표시 / 감시영역 지정(`region_select` 재사용).
 2. auto-clicker 컬러 탭: 연속클릭 지점 지정(`point_picker` 재사용) / ms 범위 지정.
 3. auto-clicker 기본 탭: 기존 순서 클릭 포인트 목록 확인·편집(변경 없음, 재사용 대상).
 4. 양쪽 "시작" → auto-clicker: `ContinuousClickEngine`이 지정 좌표를 가우시안 지터 간격으로 연속 클릭 시작. auto-capture: `ColorMonitorThread`가 지정 영역 내 목표 RGB(허용오차 내)를 감시 시작.
@@ -69,6 +69,7 @@
 - 동시 실행 방지: 컬러 탭 활성 중엔 기본 탭의 시작 버튼을 비활성화하고(역방향도 동일), `ContinuousClickEngine`과 `ClickEngine`이 동시에 `isRunning()`이면 시작 요청을 무시한다 — 기존 `_capture_blocked` 패턴을 그대로 적용.
 - IPC 연결 끊김 시 컬러 모드도 기존 `client_disconnected` 흐름을 그대로 타 자동 정지 및 상태 라벨 갱신(신규 분기 불필요).
 - 허용오차/ms 범위 등 사용자 입력값은 스핀박스 range로 UI 레벨에서 제한(기존 스타일과 동일), 별도 방어적 예외처리는 두지 않는다.
+- 돋보기 패널의 실시간 mss 캡처가 화면 경계 근처(멀티 모니터 경계 등)에서 실패할 경우, 해당 프레임은 조용히 건너뛰고 다음 `mouseMoveEvent`에서 재시도한다(전체 오버레이를 중단하지 않음).
 
 ## 5. 테스트
 
