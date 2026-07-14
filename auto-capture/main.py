@@ -7,6 +7,7 @@ from ui.tray import TrayIcon
 from ui.region_select import select_regions
 from core.monitor import MonitorThread
 from core.ipc_client import IpcClient
+from core.color_monitor import ColorMonitorThread
 
 
 def main():
@@ -22,10 +23,13 @@ def main():
 
     monitor_threads: list[MonitorThread] = []
     ipc_client: IpcClient | None = None
+    color_thread: ColorMonitorThread | None = None
 
     def on_start():
         nonlocal monitor_threads
         if any(t.isRunning() for t in monitor_threads):
+            return
+        if color_thread is not None and color_thread.isRunning():
             return
 
         regions = select_regions()
@@ -80,6 +84,41 @@ def main():
         for t in monitor_threads:
             t.wait()
 
+    def on_color_start(region, target_rgb, tolerance):
+        nonlocal color_thread
+        # 상호배타: 기존 탭1 모니터가 돌고 있으면 무시
+        if any(t.isRunning() for t in monitor_threads):
+            return
+        if color_thread is not None and color_thread.isRunning():
+            return
+        t = ColorMonitorThread(region, target_rgb, tolerance)
+        t.color_detected.connect(on_color_detected)
+        t.stopped.connect(on_color_stopped)
+        t.start()
+        color_thread = t
+        launcher.color_tab.set_monitoring(True)
+        launcher.color_tab.set_status("컬러 감시 중...")
+        tray.show()
+        tray.set_status("컬러 감시 중...")
+
+    def on_color_detected(x, y):
+        QCursor.setPos(x, y)
+        if ipc_client:
+            ipc_client.send_color_match(x, y)
+        launcher.color_tab.set_status(f"감지! ({x}, {y}) 신호 전송")
+
+    def on_color_stop():
+        nonlocal color_thread
+        if color_thread is not None and color_thread.isRunning():
+            color_thread.requestInterruption()
+            color_thread.wait()
+
+    def on_color_stopped():
+        launcher.color_tab.set_monitoring(False)
+        launcher.color_tab.set_status("")
+        if not any(t.isRunning() for t in monitor_threads):
+            tray.hide()
+
     def on_connect_toggle(checked: bool) -> None:
         nonlocal ipc_client
         if checked:
@@ -107,6 +146,7 @@ def main():
 
     def on_quit():
         on_stop()
+        on_color_stop()
         if ipc_client:
             ipc_client.stop()
 
@@ -115,6 +155,8 @@ def main():
     launcher.pause_requested.connect(on_pause)
     launcher.resume_requested.connect(on_resume)
     launcher.connect_toggled.connect(on_connect_toggle)
+    launcher.color_tab.start_requested.connect(on_color_start)
+    launcher.color_tab.stop_requested.connect(on_color_stop)
     tray.stop_requested.connect(on_stop)
     tray.open_requested.connect(on_open)
     app.aboutToQuit.connect(on_quit)

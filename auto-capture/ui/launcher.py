@@ -1,8 +1,11 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget,
+    QTabWidget
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QGuiApplication, QPainter, QColor, QPen, QPixmap
+
+from ui.color_capture_tab import ColorCaptureTab
 
 
 def make_icon_pixmap(size: int) -> QPixmap:
@@ -93,10 +96,29 @@ class Launcher(QWidget):
 
     def _build_ui(self):
         self.setWindowTitle("auto-capture")
-        self.setFixedSize(320, 440)
+        self.setFixedSize(360, 520)
         self.setStyleSheet("background-color: #1a1a2e;")
 
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        self._tabs = QTabWidget()
+        self._tabs.setStyleSheet("""
+            QTabWidget::pane { border: none; }
+            QTabBar::tab {
+                background: #2a2a4e; color: #888888;
+                padding: 8px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px;
+            }
+            QTabBar::tab:selected { background: #4ecca3; color: #1a1a2e; font-weight: bold; }
+        """)
+        self._tabs.addTab(self._build_capture_page(), "화면 변화")
+        self.color_tab = ColorCaptureTab()
+        self._tabs.addTab(self.color_tab, "컬러 감지")
+        outer.addWidget(self._tabs)
+
+    def _build_capture_page(self) -> QWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(10)
         layout.setContentsMargins(40, 40, 40, 40)
@@ -175,6 +197,8 @@ class Launcher(QWidget):
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet("color: #888888; font-size: 11px;")
         layout.addWidget(self.status_label)
+
+        return page
 
     def _center(self):
         screen = QGuiApplication.primaryScreen()
