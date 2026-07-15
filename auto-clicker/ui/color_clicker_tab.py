@@ -43,7 +43,6 @@ class ColorClickerTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._point: tuple[int, int] | None = None
-        self._blocked = False
         self._build_ui()
 
     @property
@@ -133,15 +132,7 @@ class ColorClickerTab(QWidget):
         x, y = result
         self._point = (x, y)
         self._pick_btn.setText(f"연속 클릭 지점: ({x}, {y})")
-        self._refresh_start_enabled()
-
-    def _refresh_start_enabled(self) -> None:
-        self._start_btn.setEnabled(self._point is not None and not self._blocked)
-
-    def set_blocked(self, blocked: bool) -> None:
-        """다른 엔진(순서 클릭)이 실행 중일 때 시작 버튼을 비활성화한다."""
-        self._blocked = blocked
-        self._refresh_start_enabled()
+        self._start_btn.setEnabled(True)
 
     def set_running(self, active: bool) -> None:
         self._btn_stack.setCurrentIndex(1 if active else 0)

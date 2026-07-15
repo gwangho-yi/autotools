@@ -3,9 +3,9 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QApplication, QSlider, QSpinBox
+    QScrollArea, QApplication, QSlider, QSpinBox, QTabWidget
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QGuiApplication
 
 
@@ -105,6 +105,8 @@ class MainWindow(QWidget):
         self._continuous: ContinuousClickEngine | None = None
         self._alert_repeater = AlertRepeater()
         self._ipc = IpcServer(self)
+        self._delay_timer: QTimer | None = None
+        self._countdown_remaining: int = 0
         self._build_ui()
         self._engine.sequence_finished.connect(
             self._on_sequence_finished, Qt.ConnectionType.QueuedConnection
@@ -131,7 +133,7 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("auto-clicker")
-        self.setMinimumSize(650, 700)
+        self.setMinimumSize(650, 640)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         root = QVBoxLayout(self)
@@ -158,7 +160,7 @@ class MainWindow(QWidget):
         header.addStretch()
         root.addLayout(header)
 
-        # Scrollable list
+        # Scrollable list (탭과 무관하게 항상 보이는 공유 목록)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
@@ -177,6 +179,61 @@ class MainWindow(QWidget):
         self._add_btn.setStyleSheet(_BTN_ADD)
         self._add_btn.clicked.connect(self._on_add_point)
         root.addWidget(self._add_btn)
+
+        # 탭 (순서 클릭 전용 컨트롤 / 컬러 클리커) — 포인트 목록은 위에서 이미 공유됨
+        tabs = QTabWidget()
+        tabs.setStyleSheet("""
+            QTabWidget::pane { border: none; }
+            QTabBar::tab {
+                background: #2a2a4e; color: #888888;
+                padding: 8px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px;
+            }
+            QTabBar::tab:selected { background: #4ecca3; color: #1a1a2e; font-weight: bold; }
+        """)
+        tabs.addTab(self._build_clicker_page(), "순서 클릭")
+        self.color_tab = ColorClickerTab()
+        tabs.addTab(self.color_tab, "컬러 클리커")
+        root.addWidget(tabs)
+
+    def _build_clicker_page(self) -> QWidget:
+        page = QWidget()
+        root = QVBoxLayout(page)
+        root.setSpacing(10)
+        root.setContentsMargins(0, 8, 0, 0)
+
+        # Delay start row (hidden when capture is connected)
+        self._delay_row = QWidget()
+        delay_layout = QHBoxLayout(self._delay_row)
+        delay_layout.setContentsMargins(0, 0, 0, 0)
+        delay_layout.setSpacing(6)
+
+        delay_lbl = QLabel("시작 지연:")
+        delay_lbl.setStyleSheet("color: #aaaaaa; font-size: 12px;")
+        delay_layout.addWidget(delay_lbl)
+
+        self._delay_h = QSpinBox()
+        self._delay_h.setRange(0, 23)
+        self._delay_h.setSuffix(" 시")
+        self._delay_h.setFixedWidth(72)
+        self._delay_h.setStyleSheet(_spinbox_style())
+        delay_layout.addWidget(self._delay_h)
+
+        self._delay_m = QSpinBox()
+        self._delay_m.setRange(0, 59)
+        self._delay_m.setSuffix(" 분")
+        self._delay_m.setFixedWidth(72)
+        self._delay_m.setStyleSheet(_spinbox_style())
+        delay_layout.addWidget(self._delay_m)
+
+        self._delay_s = QSpinBox()
+        self._delay_s.setRange(0, 59)
+        self._delay_s.setSuffix(" 초")
+        self._delay_s.setFixedWidth(72)
+        self._delay_s.setStyleSheet(_spinbox_style())
+        delay_layout.addWidget(self._delay_s)
+
+        delay_layout.addStretch()
+        root.addWidget(self._delay_row)
 
         # Bottom row
         bottom = QHBoxLayout()
@@ -222,14 +279,7 @@ class MainWindow(QWidget):
         self._status_label.setStyleSheet("color: #666666; font-size: 11px;")
         root.addWidget(self._status_label)
 
-        # 컬러 감지 연동 섹션 (항상 보임)
-        divider = QLabel("─── 컬러 감지 연동 ───")
-        divider.setAlignment(Qt.AlignCenter)
-        divider.setStyleSheet("color: #444466; font-size: 11px; margin-top: 6px;")
-        root.addWidget(divider)
-
-        self.color_tab = ColorClickerTab()
-        root.addWidget(self.color_tab)
+        return page
 
     def _center(self) -> None:
         screen = QGuiApplication.primaryScreen()
@@ -240,6 +290,11 @@ class MainWindow(QWidget):
             geo.center().x() - self.width() // 2,
             geo.center().y() - self.height() // 2,
         )
+
+    def _get_delay_seconds(self) -> int:
+        return (self._delay_h.value() * 3600
+                + self._delay_m.value() * 60
+                + self._delay_s.value())
 
     def _on_add_point(self) -> None:
         self.hide()
@@ -283,16 +338,14 @@ class MainWindow(QWidget):
             r.set_index(i + offset)
 
     def _update_action_btn(self) -> None:
-        running = self._engine.isRunning()
-        self.color_tab.set_blocked(running)
-        if running:
+        if self._delay_timer is not None:
+            self._action_btn.setText("■ 취소")
+            self._action_btn.setStyleSheet(_BTN_DANGER)
+            self._action_btn.setEnabled(True)
+        elif self._engine.isRunning():
             self._action_btn.setText("■ 중지")
             self._action_btn.setStyleSheet(_BTN_DANGER)
             self._action_btn.setEnabled(True)
-        elif self._continuous is not None and self._continuous.isRunning():
-            self._action_btn.setText("컬러 클리커 실행 중")
-            self._action_btn.setStyleSheet(_BTN_WAITING)
-            self._action_btn.setEnabled(False)
         elif self._capture_row:
             text = "중지됨" if self._capture_blocked else "대기 중"
             self._action_btn.setText(text)
@@ -304,7 +357,7 @@ class MainWindow(QWidget):
             self._action_btn.setEnabled(True)
 
     def _on_action_clicked(self) -> None:
-        if self._engine.isRunning():
+        if self._delay_timer is not None or self._engine.isRunning():
             self._on_stop()
         else:
             self._on_start()
@@ -319,6 +372,7 @@ class MainWindow(QWidget):
         row.show()
         self._renumber_rows()
         self._capture_blocked = False
+        self._delay_row.hide()
         self._update_action_btn()
         self._status_label.setText("auto-capture 연결됨 — 신호 대기 중...")
 
@@ -330,6 +384,7 @@ class MainWindow(QWidget):
         self._capture_row = None
         self._renumber_rows()
         self._capture_blocked = False
+        self._delay_row.show()
         self._update_action_btn()
         if not self._engine.isRunning():
             self._status_label.setText("")
@@ -340,9 +395,41 @@ class MainWindow(QWidget):
             return
         if self._engine.isRunning():
             return
-        if self._continuous is not None and self._continuous.isRunning():
-            return
-        self._start_engine()
+        total_s = self._get_delay_seconds()
+        if total_s > 0:
+            self._start_countdown(total_s)
+        else:
+            self._start_engine()
+
+    def _start_countdown(self, total_s: int) -> None:
+        self._countdown_remaining = total_s
+        self._delay_timer = QTimer(self)
+        self._delay_timer.timeout.connect(self._on_countdown_tick)
+        self._delay_row.setEnabled(False)
+        self._update_action_btn()
+        self._update_countdown_label()
+        self._delay_timer.start(1000)
+
+    def _on_countdown_tick(self) -> None:
+        self._countdown_remaining -= 1
+        if self._countdown_remaining <= 0:
+            self._stop_countdown()
+            self._start_engine()
+        else:
+            self._update_countdown_label()
+
+    def _update_countdown_label(self) -> None:
+        s = self._countdown_remaining
+        h, rem = divmod(s, 3600)
+        m, sec = divmod(rem, 60)
+        self._status_label.setText(f"시작까지 {h:02d}:{m:02d}:{sec:02d} 남음...")
+
+    def _stop_countdown(self) -> None:
+        if self._delay_timer is not None:
+            self._delay_timer.stop()
+            self._delay_timer.deleteLater()
+            self._delay_timer = None
+        self._delay_row.setEnabled(True)
 
     def _start_engine(self) -> None:
         self._engine.set_points([r.point for r in self._rows])
@@ -351,6 +438,11 @@ class MainWindow(QWidget):
         self._status_label.setText("실행 중...")
 
     def _on_stop(self) -> None:
+        if self._delay_timer is not None:
+            self._stop_countdown()
+            self._status_label.setText("취소됨.")
+            self._update_action_btn()
+            return
         self._action_btn.setEnabled(False)  # wait() 블로킹 중 큐에 쌓인 클릭 차단
         self._engine.stop()
         if self._capture_row:
@@ -393,14 +485,12 @@ class MainWindow(QWidget):
         self._continuous.start()
         self.color_tab.set_running(True)
         self.color_tab.set_status("연속 클릭 중... (컬러 감지 대기)")
-        self._update_action_btn()
 
     def _on_color_stop(self) -> None:
         if self._continuous is not None and self._continuous.isRunning():
             self._continuous.stop()
         self.color_tab.set_running(False)
         self.color_tab.set_status("중지됨.")
-        self._update_action_btn()
 
     def _on_color_match(self, x: int, y: int) -> None:
         # 이미 시퀀스 실행 중이면 무시(상호배타)
@@ -413,7 +503,6 @@ class MainWindow(QWidget):
         self._engine.set_points([r.point for r in self._rows])
         self._engine.start_from_color(x, y, self.color_tab.click_type)
         self.color_tab.set_status(f"감지 ({x}, {y}) → 클릭 시퀀스 실행 중...")
-        self._update_action_btn()
 
     def _on_motion_from_capture(self, _x: int, _y: int) -> None:
         if self._engine.isRunning() or self._capture_blocked:
@@ -425,6 +514,7 @@ class MainWindow(QWidget):
         self._status_label.setText("auto-capture 신호 수신 → 클릭 실행 중...")
 
     def closeEvent(self, event) -> None:
+        self._stop_countdown()
         self._ipc.stop()
         if self._continuous is not None and self._continuous.isRunning():
             self._continuous.stop()
