@@ -63,7 +63,7 @@ class ColorClickerTab(QWidget):
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setContentsMargins(0, 8, 0, 0)
         layout.setSpacing(10)
 
         desc = QLabel("컬러 감지 전까지 이 지점을 연속 클릭합니다")
