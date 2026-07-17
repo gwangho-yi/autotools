@@ -84,18 +84,15 @@ class _ColorPickerOverlay(QWidget):
 
     def paintEvent(self, event):
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor(0, 0, 0, 80))
+        # 주의: 이 창은 실제 화면에 렌더링되는 반투명 창이라, 여기서 그리는 모든 것이
+        # mss.grab()의 캡처 대상에 실제 픽셀처럼 함께 찍힌다. 전체화면을 덮는 딤이나
+        # 십자선처럼 캡처 영역과 겹치는 장식은 절대 그리지 않는다(색 샘플링 오염 방지).
 
         x = self._cursor_pos.x()
         y = self._cursor_pos.y()
 
-        pen = QPen(QColor("#4ecca3"), 1)
-        p.setPen(pen)
-        p.drawLine(0, y, self.width(), y)
-        p.drawLine(x, 0, x, self.height())
-
         hint = "클릭하여 색 지정  |  ESC 취소"
-        p.setPen(QColor(255, 255, 255, 160))
+        p.setPen(QColor(255, 255, 255, 200))
         hint_font = QFont()
         hint_font.setPixelSize(14)
         p.setFont(hint_font)
