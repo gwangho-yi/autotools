@@ -108,6 +108,7 @@ class MainWindow(QWidget):
         self._delay_timer: QTimer | None = None
         self._countdown_remaining: int = 0
         self._build_ui()
+        self._update_action_btn()
         self._engine.sequence_finished.connect(
             self._on_sequence_finished, Qt.ConnectionType.QueuedConnection
         )
@@ -313,6 +314,7 @@ class MainWindow(QWidget):
         self._rows.append(row)
         self._list_layout.addWidget(row)
         self._renumber_rows()
+        self._update_action_btn()
 
     def _on_pick_position(self, row: ClickPointRow) -> None:
         self.hide()
@@ -331,6 +333,7 @@ class MainWindow(QWidget):
         self._list_layout.removeWidget(row)
         row.deleteLater()
         self._renumber_rows()
+        self._update_action_btn()
 
     def _renumber_rows(self) -> None:
         offset = 1 if self._capture_row else 0
@@ -354,7 +357,7 @@ class MainWindow(QWidget):
         else:
             self._action_btn.setText("▶ 시작")
             self._action_btn.setStyleSheet(_BTN_PRIMARY)
-            self._action_btn.setEnabled(True)
+            self._action_btn.setEnabled(bool(self._rows))
 
     def _on_action_clicked(self) -> None:
         if self._delay_timer is not None or self._engine.isRunning():
