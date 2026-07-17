@@ -270,6 +270,8 @@ class MainWindow(QWidget):
         delay_layout.addStretch()
         root.addWidget(self._delay_row)
 
+        root.addStretch()
+
         # Bottom row
         bottom = QHBoxLayout()
         self._action_btn = QPushButton("▶ 시작")
