@@ -239,14 +239,14 @@ class MainWindow(QWidget):
         bottom = QHBoxLayout()
         self._action_btn = QPushButton("▶ 시작")
         self._action_btn.setStyleSheet(_BTN_PRIMARY)
+        self._action_btn.setFixedHeight(44)
         self._action_btn.clicked.connect(self._on_action_clicked)
-        bottom.addWidget(self._action_btn)
+        bottom.addWidget(self._action_btn, stretch=1)
         self._mute_btn = QPushButton("🔔 알림 중지")
         self._mute_btn.setStyleSheet(_BTN_MUTE)
         self._mute_btn.clicked.connect(self._on_mute_clicked)
         self._mute_btn.hide()
         bottom.addWidget(self._mute_btn)
-        bottom.addStretch()
         root.addLayout(bottom)
 
         # Volume row
