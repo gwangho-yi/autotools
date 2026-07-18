@@ -96,7 +96,7 @@ class Launcher(QWidget):
 
     def _build_ui(self):
         self.setWindowTitle("auto-capture")
-        self.setFixedSize(360, 520)
+        self.setFixedSize(360, 400)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         outer = QVBoxLayout(self)
