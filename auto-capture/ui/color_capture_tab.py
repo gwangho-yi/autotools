@@ -92,12 +92,6 @@ class ColorCaptureTab(QWidget):
         tol_row.addStretch()
         layout.addLayout(tol_row)
 
-        # 감시영역 행
-        self._pick_region_btn = QPushButton("감시 영역 지정")
-        self._pick_region_btn.setStyleSheet(_BTN_OUTLINE)
-        self._pick_region_btn.clicked.connect(self._on_pick_region)
-        layout.addWidget(self._pick_region_btn)
-
         layout.addStretch()
 
         # 시작/정지 스택
@@ -122,9 +116,7 @@ class ColorCaptureTab(QWidget):
         layout.addWidget(self._status_label)
 
     def _refresh_start_enabled(self) -> None:
-        self._start_btn.setEnabled(
-            self._target_rgb is not None and self._region is not None
-        )
+        self._start_btn.setEnabled(self._target_rgb is not None)
 
     def _on_pick_color(self) -> None:
         result = pick_pixel_color()
@@ -138,23 +130,22 @@ class ColorCaptureTab(QWidget):
         )
         self._refresh_start_enabled()
 
-    def _on_pick_region(self) -> None:
+    def _on_start(self) -> None:
+        if self._target_rgb is None:
+            return
+        self._start_btn.setEnabled(False)
+        self._status_label.setText("영역을 선택하세요...")
         region = select_region()
         if region is None:
+            self._status_label.setText("")
+            self._refresh_start_enabled()
             return
         self._region = region
-        self._pick_region_btn.setText("감시 영역 지정됨 ✓")
-        self._refresh_start_enabled()
-
-    def _on_start(self) -> None:
-        if self._target_rgb is None or self._region is None:
-            return
         self.start_requested.emit(self._region, self._target_rgb, self._tolerance.value())
 
     def set_monitoring(self, active: bool) -> None:
         self._btn_stack.setCurrentIndex(1 if active else 0)
         self._pick_color_btn.setEnabled(not active)
-        self._pick_region_btn.setEnabled(not active)
         self._tolerance.setEnabled(not active)
 
     def set_status(self, text: str) -> None:
