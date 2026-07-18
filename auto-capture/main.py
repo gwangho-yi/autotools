@@ -1,6 +1,8 @@
 import sys
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QCursor
+from PySide6.QtCore import Qt, QObject, Signal
+from pynput import keyboard
 
 from ui.launcher import Launcher
 from ui.tray import TrayIcon
@@ -8,6 +10,19 @@ from ui.region_select import select_regions
 from core.monitor import MonitorThread
 from core.ipc_client import IpcClient
 from core.color_monitor import ColorMonitorThread
+
+
+class _F6Relay(QObject):
+    """pynput 스레드 → Qt 메인 스레드 안전 브릿지."""
+
+    triggered = Signal()
+
+    def __init__(self, callback):
+        super().__init__()
+        self.triggered.connect(callback, Qt.ConnectionType.QueuedConnection)
+
+    def notify(self):
+        self.triggered.emit()
 
 
 def main():
@@ -24,6 +39,8 @@ def main():
     monitor_threads: list[MonitorThread] = []
     ipc_client: IpcClient | None = None
     color_thread: ColorMonitorThread | None = None
+    motion_paused = False
+    color_paused = False
 
     def on_start():
         nonlocal monitor_threads
@@ -51,23 +68,29 @@ def main():
         tray.set_status(f"모니터링 중... ({len(regions)}개 영역)")
 
     def on_motion(x, y):
+        nonlocal motion_paused
         QCursor.setPos(x, y)
         if ipc_client:
             ipc_client.send_motion(x, y)
         for t in monitor_threads:
             t.pause()
+        motion_paused = True
         launcher.set_paused()
 
     def on_pause():
+        nonlocal motion_paused
         for t in monitor_threads:
             t.pause()
+        motion_paused = True
         launcher.set_paused()
         tray.set_status("일시정지")
 
     def on_resume():
+        nonlocal motion_paused
         for t in monitor_threads:
             if not t.isInterruptionRequested():
                 t.resume()
+        motion_paused = False
         count = len(monitor_threads)
         launcher.set_monitoring(True, count)
         tray.set_status(f"모니터링 중... ({count}개 영역)")
@@ -102,24 +125,30 @@ def main():
         tray.set_status("컬러 감시 중...")
 
     def on_color_detected(x, y):
+        nonlocal color_paused
         QCursor.setPos(x, y)
         if ipc_client:
             ipc_client.send_color_match(x, y)
         if color_thread is not None:
             color_thread.pause()
+        color_paused = True
         launcher.color_tab.set_paused()
         launcher.color_tab.set_status(f"감지! ({x}, {y}) → 일시정지 (재시작을 눌러야 다시 감지)")
 
     def on_color_pause():
+        nonlocal color_paused
         if color_thread is not None and color_thread.isRunning():
             color_thread.pause()
+        color_paused = True
         launcher.color_tab.set_paused()
         launcher.color_tab.set_status("일시정지 — 컬러 감시 대기 중")
         tray.set_status("컬러 감시 일시정지")
 
     def on_color_resume():
+        nonlocal color_paused
         if color_thread is not None and not color_thread.isInterruptionRequested():
             color_thread.resume()
+        color_paused = False
         launcher.color_tab.set_monitoring(True)
         launcher.color_tab.set_status("컬러 감시 중...")
         tray.set_status("컬러 감시 중...")
@@ -161,11 +190,18 @@ def main():
         launcher.show()
         launcher.raise_()
 
+    def on_f6_toggle():
+        if any(t.isRunning() for t in monitor_threads):
+            on_resume() if motion_paused else on_pause()
+        elif color_thread is not None and color_thread.isRunning():
+            on_color_resume() if color_paused else on_color_pause()
+
     def on_quit():
         on_stop()
         on_color_stop()
         if ipc_client:
             ipc_client.stop()
+        hotkey_listener.stop()
 
     launcher.start_requested.connect(on_start)
     launcher.stop_requested.connect(on_stop)
@@ -179,6 +215,10 @@ def main():
     tray.stop_requested.connect(on_stop)
     tray.open_requested.connect(on_open)
     app.aboutToQuit.connect(on_quit)
+
+    f6_relay = _F6Relay(on_f6_toggle)
+    hotkey_listener = keyboard.GlobalHotKeys({'<f6>': f6_relay.notify})
+    hotkey_listener.start()
 
     launcher.show()
     launcher.raise_()
