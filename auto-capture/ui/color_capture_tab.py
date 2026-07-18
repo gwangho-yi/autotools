@@ -69,16 +69,8 @@ class ColorCaptureTab(QWidget):
         layout.setContentsMargins(24, 16, 24, 6)
         layout.setSpacing(10)
 
-        # 색 샘플 행
+        # 색 샘플 행 — RGB 입력이 왼쪽, 색 지정 버튼/스와치가 오른쪽
         color_row = QHBoxLayout()
-        self._pick_color_btn = QPushButton("색 지정")
-        self._pick_color_btn.setStyleSheet(_BTN_OUTLINE)
-        self._pick_color_btn.clicked.connect(self._on_pick_color)
-        color_row.addWidget(self._pick_color_btn)
-        self._swatch = QLabel()
-        self._swatch.setFixedSize(40, 28)
-        self._swatch.setStyleSheet("background-color: #2a2a4e; border-radius: 4px;")
-        color_row.addWidget(self._swatch)
 
         self._rgb_spins: list[QSpinBox] = []
         for label_text in ("R", "G", "B"):
@@ -92,7 +84,20 @@ class ColorCaptureTab(QWidget):
             spin.valueChanged.connect(self._on_rgb_spin_changed)
             color_row.addWidget(spin)
             self._rgb_spins.append(spin)
+
         color_row.addStretch()
+
+        self._pick_color_btn = QPushButton("색 지정")
+        self._pick_color_btn.setStyleSheet(_BTN_OUTLINE)
+        self._pick_color_btn.setFixedSize(92, 32)
+        self._pick_color_btn.clicked.connect(self._on_pick_color)
+        color_row.addWidget(self._pick_color_btn)
+
+        self._swatch = QLabel()
+        self._swatch.setFixedSize(40, 28)
+        self._swatch.setStyleSheet("background-color: #2a2a4e; border-radius: 4px;")
+        color_row.addWidget(self._swatch)
+
         layout.addLayout(color_row)
 
         # 허용오차 행
