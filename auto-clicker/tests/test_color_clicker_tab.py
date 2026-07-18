@@ -34,3 +34,36 @@ def test_min_max_defaults_and_start_signal(qtbot):
         tab._start_btn.click()
     assert tab.min_ms == 50
     assert tab.max_ms == 150
+
+
+def test_min_greater_than_max_is_clamped_with_error(qtbot):
+    from ui.color_clicker_tab import ColorClickerTab
+
+    tab = ColorClickerTab()
+    qtbot.addWidget(tab)
+    tab._max_spin.setValue(200)
+    tab._min_spin.setValue(300)
+    assert tab._min_spin.value() == 200
+    assert tab._ms_error_label.text() != ""
+
+
+def test_max_less_than_min_is_clamped_with_error(qtbot):
+    from ui.color_clicker_tab import ColorClickerTab
+
+    tab = ColorClickerTab()
+    qtbot.addWidget(tab)
+    tab._min_spin.setValue(100)
+    tab._max_spin.setValue(50)
+    assert tab._max_spin.value() == 100
+    assert tab._ms_error_label.text() != ""
+
+
+def test_valid_min_max_clears_error(qtbot):
+    from ui.color_clicker_tab import ColorClickerTab
+
+    tab = ColorClickerTab()
+    qtbot.addWidget(tab)
+    tab._max_spin.setValue(200)
+    tab._min_spin.setValue(300)  # 에러 발생
+    tab._min_spin.setValue(50)   # 다시 유효한 값
+    assert tab._ms_error_label.text() == ""
