@@ -56,18 +56,18 @@ class _ColorPickerOverlay(QWidget):
         self.setGeometry(screen.geometry())
 
     def mouseMoveEvent(self, event):
-        self._sync_cursor_pos()
+        self._sync_cursor_pos(event)
         self._update_loupe()
         self.update()
 
-    def _sync_cursor_pos(self) -> None:
-        # event.position()은 "이 이벤트를 받은 위젯"의 로컬 좌표다. 화면마다 별도의
-        # 오버레이를 띄우는 구조에서, 실제 커서가 있는 화면의 오버레이가 이벤트를
-        # 받는다는 전제가 깨지면(멀티 모니터 배치, 특히 y좌표가 음수인 비정형 배치 등)
-        # "로컬 좌표 + 이 오버레이가 담당하는 화면의 원점"으로 계산한 전역 좌표가
-        # 실제 커서 위치와 어긋난다. QCursor.pos()는 Qt가 직접 관리하는 전역(논리)
-        # 좌표라 어떤 오버레이가 이벤트를 받았는지와 무관하게 항상 정확하다.
-        self._global_pos = QCursor.pos()
+    def _sync_cursor_pos(self, event) -> None:
+        # QCursor.pos()는 "지금 이 순간" 시스템에 다시 묻는 라이브 조회라서, 이벤트가
+        # 큐에 있다가 처리되는 사이의 시간차 때문에 실제 이 이벤트가 발생한 시점의
+        # 좌표와 어긋날 수 있다(작은 타겟을 정밀하게 클릭할 때처럼 클릭 직전 미세한
+        # 움직임이 있으면 특히 그렇다). event.globalPosition()은 이 이벤트 자체가
+        # 발생한 시점에 박제된 전역 좌표라 항상 정확하고, 로컬 좌표+화면 원점을 직접
+        # 계산할 필요도 없어 멀티 모니터 환경에서도 안전하다.
+        self._global_pos = event.globalPosition().toPoint()
         self._cursor_pos = self.mapFromGlobal(self._global_pos)
 
     def _update_loupe(self):
@@ -135,10 +135,9 @@ class _ColorPickerOverlay(QWidget):
                        Qt.AlignCenter, f"RGB({r}, {g}, {b})")
 
     def mousePressEvent(self, event):
-        # 로컬 이벤트 좌표 대신 항상 QCursor.pos()(전역) 기준으로 다시 동기화한 뒤
-        # 샘플링한다 — 어떤 오버레이가 클릭 이벤트를 받았는지와 무관하게 정확한
-        # 전역 위치에서 색을 읽고, 그 좌표를 그대로 결과로 반환한다.
-        self._sync_cursor_pos()
+        # event.globalPosition()으로 동기화한다 — 이벤트 발생 시점에 박제된 좌표라
+        # QCursor.pos()의 라이브 재조회로 인한 시간차 오차가 없다.
+        self._sync_cursor_pos(event)
         self._update_loupe()
         self._shared["result"] = (
             self._global_pos.x(), self._global_pos.y(), self._center_rgb
