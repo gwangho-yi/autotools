@@ -105,7 +105,10 @@ def main():
         QCursor.setPos(x, y)
         if ipc_client:
             ipc_client.send_color_match(x, y)
-        launcher.color_tab.set_status(f"감지! ({x}, {y}) 신호 전송")
+        if color_thread is not None:
+            color_thread.pause()
+        launcher.color_tab.set_paused()
+        launcher.color_tab.set_status(f"감지! ({x}, {y}) → 일시정지 (재시작을 눌러야 다시 감지)")
 
     def on_color_pause():
         if color_thread is not None and color_thread.isRunning():
