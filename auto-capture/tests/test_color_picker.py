@@ -10,3 +10,78 @@ def test_loupe_flips_left_near_right_edge():
     # 커서가 오른쪽 끝 근처 → 왼쪽으로 flip (패널 오른쪽 끝이 화면 안)
     x = _loupe_geometry(cursor_x=1900, panel_w=140, screen_w=1920)
     assert x + 140 <= 1900
+
+
+from unittest.mock import patch, MagicMock
+
+import numpy as np
+from PySide6.QtCore import QPoint
+
+
+def _fake_frame(rgb):
+    r, g, b = rgb
+    frame = np.zeros((15, 15, 3), dtype=np.uint8)
+    frame[:, :, 0] = b
+    frame[:, :, 1] = g
+    frame[:, :, 2] = r
+    return frame
+
+
+class _FakeSct:
+    def __init__(self, frame):
+        self._frame = frame
+
+    def grab(self, region):
+        return self._frame
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+def test_click_result_uses_global_cursor_pos_not_local_event_pos(qtbot, qapp):
+    from ui.color_picker import _ColorPickerOverlay
+    from PySide6.QtGui import QGuiApplication
+
+    screen = QGuiApplication.primaryScreen()
+    shared = {"result": None, "close_fn": lambda: None}
+    overlay = _ColorPickerOverlay(screen, shared)
+    qtbot.addWidget(overlay)
+
+    fake_global = QPoint(500, 300)
+    fake_frame = _fake_frame((30, 20, 10))
+
+    fake_event = MagicMock()
+    # 로컬 이벤트 좌표는 전역 좌표와 전혀 다른 값 — 이 값이 결과에 쓰이면 버그가 재발한 것
+    fake_event.position.return_value.toPoint.return_value = QPoint(1, 1)
+
+    with patch("ui.color_picker.QCursor.pos", return_value=fake_global), \
+         patch("ui.color_picker.mss.mss", return_value=_FakeSct(fake_frame)):
+        overlay.mousePressEvent(fake_event)
+
+    assert shared["result"] == (500, 300, (30, 20, 10))
+
+
+def test_mouse_move_syncs_loupe_from_global_cursor_pos(qtbot, qapp):
+    from ui.color_picker import _ColorPickerOverlay
+    from PySide6.QtGui import QGuiApplication
+
+    screen = QGuiApplication.primaryScreen()
+    shared = {"result": None, "close_fn": lambda: None}
+    overlay = _ColorPickerOverlay(screen, shared)
+    qtbot.addWidget(overlay)
+
+    fake_global = QPoint(640, 480)
+    fake_frame = _fake_frame((200, 100, 50))
+
+    fake_event = MagicMock()
+    fake_event.position.return_value.toPoint.return_value = QPoint(9, 9)
+
+    with patch("ui.color_picker.QCursor.pos", return_value=fake_global), \
+         patch("ui.color_picker.mss.mss", return_value=_FakeSct(fake_frame)):
+        overlay.mouseMoveEvent(fake_event)
+
+    assert overlay._global_pos == fake_global
+    assert overlay._center_rgb == (200, 100, 50)

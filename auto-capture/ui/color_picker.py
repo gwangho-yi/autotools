@@ -4,7 +4,7 @@ import numpy as np
 import mss
 from PySide6.QtWidgets import QWidget, QApplication
 from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent, Signal, QRect
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QGuiApplication, QImage
+from PySide6.QtGui import QPainter, QColor, QPen, QFont, QGuiApplication, QImage, QCursor
 
 _LOUPE_SRC = 15        # 캡처할 원본 영역 한 변(px)
 _LOUPE_SCALE = 8       # 확대 배율
@@ -38,6 +38,7 @@ class _ColorPickerOverlay(QWidget):
         super().__init__()
         self._screen = screen
         self._shared = shared
+        self._global_pos = QCursor.pos()
         self._cursor_pos = QPoint(0, 0)
         self._loupe_img: QImage | None = None
         self._center_rgb = (0, 0, 0)
@@ -55,14 +56,23 @@ class _ColorPickerOverlay(QWidget):
         self.setGeometry(screen.geometry())
 
     def mouseMoveEvent(self, event):
-        self._cursor_pos = event.position().toPoint()
+        self._sync_cursor_pos()
         self._update_loupe()
         self.update()
 
+    def _sync_cursor_pos(self) -> None:
+        # event.position()은 "이 이벤트를 받은 위젯"의 로컬 좌표다. 화면마다 별도의
+        # 오버레이를 띄우는 구조에서, 실제 커서가 있는 화면의 오버레이가 이벤트를
+        # 받는다는 전제가 깨지면(멀티 모니터 배치, 특히 y좌표가 음수인 비정형 배치 등)
+        # "로컬 좌표 + 이 오버레이가 담당하는 화면의 원점"으로 계산한 전역 좌표가
+        # 실제 커서 위치와 어긋난다. QCursor.pos()는 Qt가 직접 관리하는 전역(논리)
+        # 좌표라 어떤 오버레이가 이벤트를 받았는지와 무관하게 항상 정확하다.
+        self._global_pos = QCursor.pos()
+        self._cursor_pos = self.mapFromGlobal(self._global_pos)
+
     def _update_loupe(self):
-        origin = self._screen.geometry().topLeft()
-        gx = self._cursor_pos.x() + origin.x()
-        gy = self._cursor_pos.y() + origin.y()
+        gx = self._global_pos.x()
+        gy = self._global_pos.y()
         half = _LOUPE_SRC // 2
         region = {"left": gx - half, "top": gy - half,
                   "width": _LOUPE_SRC, "height": _LOUPE_SRC}
@@ -125,15 +135,13 @@ class _ColorPickerOverlay(QWidget):
                        Qt.AlignCenter, f"RGB({r}, {g}, {b})")
 
     def mousePressEvent(self, event):
-        # 오버레이가 뜬 직후 마우스를 움직이지 않고 바로 클릭하면 mouseMoveEvent가
-        # 한 번도 발생하지 않아 self._cursor_pos가 갱신되지 않은 채로 남는다.
-        # 클릭 시점의 실제 좌표를 먼저 반영해야 클릭한 픽셀의 색을 정확히 샘플링한다.
-        self._cursor_pos = event.position().toPoint()
+        # 로컬 이벤트 좌표 대신 항상 QCursor.pos()(전역) 기준으로 다시 동기화한 뒤
+        # 샘플링한다 — 어떤 오버레이가 클릭 이벤트를 받았는지와 무관하게 정확한
+        # 전역 위치에서 색을 읽고, 그 좌표를 그대로 결과로 반환한다.
+        self._sync_cursor_pos()
         self._update_loupe()
-        pos = self._cursor_pos
-        origin = self._screen.geometry().topLeft()
         self._shared["result"] = (
-            pos.x() + origin.x(), pos.y() + origin.y(), self._center_rgb
+            self._global_pos.x(), self._global_pos.y(), self._center_rgb
         )
         self._shared["close_fn"]()
 
