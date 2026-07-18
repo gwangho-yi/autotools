@@ -107,6 +107,20 @@ def main():
             ipc_client.send_color_match(x, y)
         launcher.color_tab.set_status(f"감지! ({x}, {y}) 신호 전송")
 
+    def on_color_pause():
+        if color_thread is not None and color_thread.isRunning():
+            color_thread.pause()
+        launcher.color_tab.set_paused()
+        launcher.color_tab.set_status("일시정지 — 컬러 감시 대기 중")
+        tray.set_status("컬러 감시 일시정지")
+
+    def on_color_resume():
+        if color_thread is not None and not color_thread.isInterruptionRequested():
+            color_thread.resume()
+        launcher.color_tab.set_monitoring(True)
+        launcher.color_tab.set_status("컬러 감시 중...")
+        tray.set_status("컬러 감시 중...")
+
     def on_color_stop():
         nonlocal color_thread
         if color_thread is not None and color_thread.isRunning():
@@ -157,6 +171,8 @@ def main():
     launcher.connect_toggled.connect(on_connect_toggle)
     launcher.color_tab.start_requested.connect(on_color_start)
     launcher.color_tab.stop_requested.connect(on_color_stop)
+    launcher.color_tab.pause_requested.connect(on_color_pause)
+    launcher.color_tab.resume_requested.connect(on_color_resume)
     tray.stop_requested.connect(on_stop)
     tray.open_requested.connect(on_open)
     app.aboutToQuit.connect(on_quit)

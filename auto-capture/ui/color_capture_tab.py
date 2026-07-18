@@ -47,6 +47,8 @@ _SPIN_STYLE = """
 class ColorCaptureTab(QWidget):
     start_requested = Signal(dict, tuple, int)
     stop_requested = Signal()
+    pause_requested = Signal()
+    resume_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -108,20 +110,42 @@ class ColorCaptureTab(QWidget):
 
         layout.addStretch()
 
-        # 시작/정지 스택
+        # 시작/일시정지/정지 스택 (launcher.py의 _build_capture_page와 동일한 패턴)
         self._btn_stack = QStackedWidget()
         self._btn_stack.setFixedHeight(44)
+
+        # Page 0: idle
         self._start_btn = QPushButton("시작")
         self._start_btn.setFixedHeight(44)
         self._start_btn.setStyleSheet(_BTN_GREEN)
         self._start_btn.setEnabled(False)
         self._start_btn.clicked.connect(self._on_start)
         self._btn_stack.addWidget(self._start_btn)
+
+        # Page 1: monitoring
+        self._pause_btn = QPushButton("일시정지")
+        self._pause_btn.setFixedHeight(44)
+        self._pause_btn.setStyleSheet(_BTN_OUTLINE)
+        self._pause_btn.clicked.connect(lambda: self.pause_requested.emit())
+        self._btn_stack.addWidget(self._pause_btn)
+
+        # Page 2: paused
+        p2 = QWidget()
+        p2_l = QHBoxLayout(p2)
+        p2_l.setContentsMargins(0, 0, 0, 0)
+        p2_l.setSpacing(8)
+        self._resume_btn = QPushButton("재시작")
+        self._resume_btn.setFixedHeight(44)
+        self._resume_btn.setStyleSheet(_BTN_GREEN)
+        self._resume_btn.clicked.connect(lambda: self.resume_requested.emit())
+        p2_l.addWidget(self._resume_btn)
         self._stop_btn = QPushButton("중지")
         self._stop_btn.setFixedHeight(44)
         self._stop_btn.setStyleSheet(_BTN_RED)
         self._stop_btn.clicked.connect(lambda: self.stop_requested.emit())
-        self._btn_stack.addWidget(self._stop_btn)
+        p2_l.addWidget(self._stop_btn)
+        self._btn_stack.addWidget(p2)
+
         layout.addWidget(self._btn_stack)
 
         self._status_label = QLabel("")
@@ -173,6 +197,9 @@ class ColorCaptureTab(QWidget):
         self._btn_stack.setCurrentIndex(1 if active else 0)
         self._pick_color_btn.setEnabled(not active)
         self._tolerance.setEnabled(not active)
+
+    def set_paused(self) -> None:
+        self._btn_stack.setCurrentIndex(2)
 
     def set_status(self, text: str) -> None:
         self._status_label.setText(text)

@@ -86,3 +86,40 @@ def test_start_cancelled_when_region_selection_cancelled(qtbot, qapp):
 
     assert emitted == []
     assert tab._start_btn.isEnabled()
+
+
+def test_pause_button_shown_when_monitoring_and_emits_pause_requested(qtbot, qapp):
+    from ui.color_capture_tab import ColorCaptureTab
+
+    tab = ColorCaptureTab()
+    qtbot.addWidget(tab)
+    tab.set_monitoring(True)
+    assert tab._btn_stack.currentIndex() == 1
+
+    with qtbot.waitSignal(tab.pause_requested, timeout=1000):
+        tab._pause_btn.click()
+
+
+def test_set_paused_shows_resume_and_stop_buttons(qtbot, qapp):
+    from ui.color_capture_tab import ColorCaptureTab
+
+    tab = ColorCaptureTab()
+    qtbot.addWidget(tab)
+    tab.set_monitoring(True)
+    tab.set_paused()
+    assert tab._btn_stack.currentIndex() == 2
+
+    with qtbot.waitSignal(tab.resume_requested, timeout=1000):
+        tab._resume_btn.click()
+
+
+def test_stop_button_in_paused_state_emits_stop_requested(qtbot, qapp):
+    from ui.color_capture_tab import ColorCaptureTab
+
+    tab = ColorCaptureTab()
+    qtbot.addWidget(tab)
+    tab.set_monitoring(True)
+    tab.set_paused()
+
+    with qtbot.waitSignal(tab.stop_requested, timeout=1000):
+        tab._stop_btn.click()
