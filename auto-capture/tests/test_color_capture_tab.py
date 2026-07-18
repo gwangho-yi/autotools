@@ -123,3 +123,24 @@ def test_stop_button_in_paused_state_emits_stop_requested(qtbot, qapp):
 
     with qtbot.waitSignal(tab.stop_requested, timeout=1000):
         tab._stop_btn.click()
+
+
+def test_start_btn_reenabled_after_stopping(qtbot, qapp):
+    from ui.color_capture_tab import ColorCaptureTab
+
+    tab = ColorCaptureTab()
+    qtbot.addWidget(tab)
+    with patch("ui.color_capture_tab.pick_pixel_color",
+               return_value=(50, 60, (200, 100, 30))):
+        tab._on_pick_color()
+
+    with patch("ui.color_capture_tab.select_region",
+               return_value={"left": 0, "top": 0, "width": 10, "height": 10}):
+        tab._start_btn.click()
+    assert not tab._start_btn.isEnabled()  # 영역 선택 중/모니터링 중에는 비활성
+
+    tab.set_monitoring(True)
+    assert not tab._start_btn.isEnabled()  # 모니터링 중에도 비활성 유지
+
+    tab.set_monitoring(False)
+    assert tab._start_btn.isEnabled()  # 정지 후에는 다시 활성화되어야 함
