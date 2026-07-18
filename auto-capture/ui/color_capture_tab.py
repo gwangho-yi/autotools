@@ -77,6 +77,20 @@ class ColorCaptureTab(QWidget):
         self._swatch.setFixedSize(40, 28)
         self._swatch.setStyleSheet("background-color: #2a2a4e; border-radius: 4px;")
         color_row.addWidget(self._swatch)
+
+        self._rgb_spins: list[QSpinBox] = []
+        for label_text in ("R", "G", "B"):
+            lbl = QLabel(label_text)
+            lbl.setStyleSheet("color: #aaaaaa; font-size: 11px;")
+            color_row.addWidget(lbl)
+            spin = QSpinBox()
+            spin.setRange(0, 255)
+            spin.setStyleSheet(_SPIN_STYLE)
+            spin.setFixedWidth(52)
+            spin.valueChanged.connect(self._on_rgb_spin_changed)
+            color_row.addWidget(spin)
+            self._rgb_spins.append(spin)
+        color_row.addStretch()
         layout.addLayout(color_row)
 
         # 허용오차 행
@@ -123,12 +137,24 @@ class ColorCaptureTab(QWidget):
         if result is None:
             return
         _x, _y, rgb = result
+        self._set_target_rgb(rgb, sync_spins=True)
+
+    def _set_target_rgb(self, rgb: tuple[int, int, int], sync_spins: bool) -> None:
         self._target_rgb = rgb
         r, g, b = rgb
         self._swatch.setStyleSheet(
             f"background-color: rgb({r},{g},{b}); border-radius: 4px;"
         )
+        if sync_spins:
+            for spin, value in zip(self._rgb_spins, rgb):
+                spin.blockSignals(True)
+                spin.setValue(value)
+                spin.blockSignals(False)
         self._refresh_start_enabled()
+
+    def _on_rgb_spin_changed(self, _value: int) -> None:
+        rgb = tuple(spin.value() for spin in self._rgb_spins)
+        self._set_target_rgb(rgb, sync_spins=False)
 
     def _on_start(self) -> None:
         if self._target_rgb is None:

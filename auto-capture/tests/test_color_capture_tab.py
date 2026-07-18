@@ -22,6 +22,34 @@ def test_sampling_color_updates_swatch(qtbot, qapp):
     assert tab.target_rgb == (200, 100, 30)
 
 
+def test_picked_color_syncs_rgb_spinboxes(qtbot, qapp):
+    from ui.color_capture_tab import ColorCaptureTab
+
+    tab = ColorCaptureTab()
+    qtbot.addWidget(tab)
+    with patch("ui.color_capture_tab.pick_pixel_color",
+               return_value=(50, 60, (200, 100, 30))):
+        tab._on_pick_color()
+    values = tuple(spin.value() for spin in tab._rgb_spins)
+    assert values == (200, 100, 30)
+
+
+def test_editing_rgb_spinboxes_updates_target_and_enables_start(qtbot, qapp):
+    from ui.color_capture_tab import ColorCaptureTab
+
+    tab = ColorCaptureTab()
+    qtbot.addWidget(tab)
+    assert not tab._start_btn.isEnabled()
+
+    r_spin, g_spin, b_spin = tab._rgb_spins
+    r_spin.setValue(10)
+    g_spin.setValue(20)
+    b_spin.setValue(30)
+
+    assert tab.target_rgb == (10, 20, 30)
+    assert tab._start_btn.isEnabled()
+
+
 def test_start_opens_region_select_and_emits_params(qtbot, qapp):
     from ui.color_capture_tab import ColorCaptureTab
 

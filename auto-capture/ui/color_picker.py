@@ -125,8 +125,12 @@ class _ColorPickerOverlay(QWidget):
                        Qt.AlignCenter, f"RGB({r}, {g}, {b})")
 
     def mousePressEvent(self, event):
+        # 오버레이가 뜬 직후 마우스를 움직이지 않고 바로 클릭하면 mouseMoveEvent가
+        # 한 번도 발생하지 않아 self._cursor_pos가 갱신되지 않은 채로 남는다.
+        # 클릭 시점의 실제 좌표를 먼저 반영해야 클릭한 픽셀의 색을 정확히 샘플링한다.
+        self._cursor_pos = event.position().toPoint()
         self._update_loupe()
-        pos = event.position().toPoint()
+        pos = self._cursor_pos
         origin = self._screen.geometry().topLeft()
         self._shared["result"] = (
             pos.x() + origin.x(), pos.y() + origin.y(), self._center_rgb
