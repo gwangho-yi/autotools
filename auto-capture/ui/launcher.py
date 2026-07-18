@@ -101,7 +101,7 @@ class Launcher(QWidget):
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 12)
-        outer.setSpacing(8)
+        outer.setSpacing(2)
 
         self._tabs = QTabWidget()
         self._tabs.setStyleSheet("""
@@ -132,7 +132,7 @@ class Launcher(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setSpacing(10)
-        layout.setContentsMargins(24, 16, 24, 16)
+        layout.setContentsMargins(24, 16, 24, 6)
 
         icon_label = QLabel()
         icon_label.setPixmap(make_icon_pixmap(64))

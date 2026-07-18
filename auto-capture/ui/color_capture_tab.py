@@ -64,7 +64,7 @@ class ColorCaptureTab(QWidget):
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 16, 24, 16)
+        layout.setContentsMargins(24, 16, 24, 6)
         layout.setSpacing(10)
 
         # 색 샘플 행
