@@ -129,7 +129,7 @@ class ColorCaptureTab(QWidget):
         self._btn_stack.addWidget(self._start_btn)
 
         # Page 1: monitoring
-        self._pause_btn = QPushButton("일시정지")
+        self._pause_btn = QPushButton("일시정지 (F6)")
         self._pause_btn.setFixedHeight(44)
         self._pause_btn.setStyleSheet(_BTN_OUTLINE)
         self._pause_btn.clicked.connect(lambda: self.pause_requested.emit())
@@ -140,7 +140,7 @@ class ColorCaptureTab(QWidget):
         p2_l = QHBoxLayout(p2)
         p2_l.setContentsMargins(0, 0, 0, 0)
         p2_l.setSpacing(8)
-        self._resume_btn = QPushButton("재시작")
+        self._resume_btn = QPushButton("재시작 (F6)")
         self._resume_btn.setFixedHeight(44)
         self._resume_btn.setStyleSheet(_BTN_GREEN)
         self._resume_btn.clicked.connect(lambda: self.resume_requested.emit())
