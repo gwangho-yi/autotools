@@ -5,8 +5,9 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QApplication, QSlider, QSpinBox, QTabWidget
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QObject, Signal
 from PySide6.QtGui import QGuiApplication
+from pynput import keyboard
 
 
 def _spinbox_style() -> str:
@@ -95,6 +96,19 @@ _BTN_MUTE = """
 
 
 
+class _F6Relay(QObject):
+    """pynput 스레드 → Qt 메인 스레드 안전 브릿지."""
+
+    triggered = Signal()
+
+    def __init__(self, callback):
+        super().__init__()
+        self.triggered.connect(callback, Qt.ConnectionType.QueuedConnection)
+
+    def notify(self):
+        self.triggered.emit()
+
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -130,6 +144,9 @@ class MainWindow(QWidget):
             self._on_color_match, Qt.ConnectionType.QueuedConnection
         )
         self._ipc.start()
+        self._f6_relay = _F6Relay(self._on_f6_toggle)
+        self._hotkey_listener = keyboard.GlobalHotKeys({'<f6>': self._f6_relay.notify})
+        self._hotkey_listener.start()
         self._center()
 
     def _build_ui(self) -> None:
@@ -513,6 +530,14 @@ class MainWindow(QWidget):
         self._engine.start_from_color(x, y, self.color_tab.click_type)
         self.color_tab.set_status(f"감지 ({x}, {y}) → 클릭 시퀀스 실행 중...")
 
+    def _on_f6_toggle(self) -> None:
+        if self._engine.isRunning():
+            return
+        if self._continuous is not None and self._continuous.isRunning():
+            self._on_color_stop()
+        elif self.color_tab.point is not None:
+            self._on_color_start()
+
     def _on_motion_from_capture(self, _x: int, _y: int) -> None:
         if self._engine.isRunning() or self._capture_blocked:
             return
@@ -523,6 +548,7 @@ class MainWindow(QWidget):
         self._status_label.setText("auto-capture 신호 수신 → 클릭 실행 중...")
 
     def closeEvent(self, event) -> None:
+        self._hotkey_listener.stop()
         self._stop_countdown()
         self._ipc.stop()
         if self._continuous is not None and self._continuous.isRunning():
