@@ -145,7 +145,7 @@ class MainWindow(QWidget):
         )
         self._ipc.start()
         self._f6_relay = _F6Relay(self._on_f6_toggle)
-        self._hotkey_listener = keyboard.GlobalHotKeys({'<f6>': self._f6_relay.notify})
+        self._hotkey_listener = keyboard.GlobalHotKeys({'<f7>': self._f6_relay.notify})
         self._hotkey_listener.start()
         self._center()
 
