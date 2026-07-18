@@ -100,7 +100,8 @@ class Launcher(QWidget):
         self.setStyleSheet("background-color: #1a1a2e;")
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setContentsMargins(0, 0, 0, 12)
+        outer.setSpacing(8)
 
         self._tabs = QTabWidget()
         self._tabs.setStyleSheet("""
@@ -116,12 +117,22 @@ class Launcher(QWidget):
         self._tabs.addTab(self.color_tab, "컬러 감지")
         outer.addWidget(self._tabs)
 
+        # auto-clicker 연결 버튼 — 탭과 무관하게 항상 보이는 공유 영역
+        conn_row = QHBoxLayout()
+        conn_row.setContentsMargins(20, 0, 20, 0)
+        self._conn_btn = QPushButton("auto-clicker 연결")
+        self._conn_btn.setFixedHeight(34)
+        self._conn_btn.setCheckable(True)
+        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#8888bb"))
+        self._conn_btn.toggled.connect(self._on_conn_toggled)
+        conn_row.addWidget(self._conn_btn)
+        outer.addLayout(conn_row)
+
     def _build_capture_page(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(10)
-        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setContentsMargins(24, 16, 24, 16)
 
         icon_label = QLabel()
         icon_label.setPixmap(make_icon_pixmap(64))
@@ -139,7 +150,7 @@ class Launcher(QWidget):
         subtitle.setStyleSheet("color: #888888; font-size: 12px;")
         layout.addWidget(subtitle)
 
-        layout.addSpacing(10)
+        layout.addStretch()
 
         self._btn_stack = QStackedWidget()
         self._btn_stack.setFixedHeight(44)
@@ -184,14 +195,6 @@ class Launcher(QWidget):
         self._btn_stack.addWidget(p2)
 
         layout.addWidget(self._btn_stack)
-
-        # auto-clicker connection button
-        self._conn_btn = QPushButton("auto-clicker 연결")
-        self._conn_btn.setFixedHeight(34)
-        self._conn_btn.setCheckable(True)
-        self._conn_btn.setStyleSheet(_CONN_BTN_STYLE.format(color="#8888bb"))
-        self._conn_btn.toggled.connect(self._on_conn_toggled)
-        layout.addWidget(self._conn_btn)
 
         self.status_label = QLabel("")
         self.status_label.setAlignment(Qt.AlignCenter)
