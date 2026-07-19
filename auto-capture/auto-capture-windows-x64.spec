@@ -4,18 +4,19 @@ from PyInstaller.utils.hooks import collect_all
 
 numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all('numpy')
 mss_datas, mss_binaries, mss_hiddenimports = collect_all('mss')
+pynput_datas, pynput_binaries, pynput_hiddenimports = collect_all('pynput')
 
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=[] + numpy_binaries + mss_binaries,
-    datas=[('assets', 'assets')] + numpy_datas + mss_datas,
+    binaries=[] + numpy_binaries + mss_binaries + pynput_binaries,
+    datas=[('assets', 'assets')] + numpy_datas + mss_datas + pynput_datas,
     hiddenimports=[
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',
         'PySide6.QtNetwork',
-    ] + numpy_hiddenimports + mss_hiddenimports,
+    ] + numpy_hiddenimports + mss_hiddenimports + pynput_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
