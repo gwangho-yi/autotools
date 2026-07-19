@@ -4,7 +4,7 @@ setlocal
 echo =^=> Setting up dependencies...
 uv sync
 if errorlevel 1 (echo uv sync failed. Install uv from https://docs.astral.sh/uv/ & pause & exit /b 1)
-uv add pyinstaller
+uv add pyinstaller pynput
 if errorlevel 1 goto :error
 
 echo =^=> Running tests...
