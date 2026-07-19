@@ -7,6 +7,7 @@ from PySide6.QtGui import QPainter, QColor, QPen, QGuiApplication, QFont
 class RegionSelector(QWidget):
     def __init__(self, screen, shared):
         super().__init__()
+        print("[DEBUG] RegionSelector.__init__: enter", flush=True)
         self._screen = screen
         self._shared = shared  # {'regions': [], 'loop': None, 'widgets': []}
         self._state = "drawing"
@@ -16,17 +17,23 @@ class RegionSelector(QWidget):
         self.setWindowFlags(
             Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
         )
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        # [진단용 임시 비활성화] 3D 가속 없는 VM에서 반투명 레이어드 창 합성이
+        # 크래시 원인인지 확인하기 위해 잠시 끈다. 원인 확인되면 다시 켠다.
+        # self.setAttribute(Qt.WA_TranslucentBackground)
+        print("[DEBUG] RegionSelector.__init__: WA_TranslucentBackground SKIPPED (diagnostic)", flush=True)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setCursor(Qt.CrossCursor)
 
         self.show()
+        print("[DEBUG] RegionSelector.__init__: show() called", flush=True)
         handle = self.windowHandle()
         if handle:
             handle.setScreen(screen)
         self.setGeometry(screen.geometry())
+        print("[DEBUG] RegionSelector.__init__: geometry set, done", flush=True)
 
     def paintEvent(self, event):
+        print("[DEBUG] RegionSelector.paintEvent: enter", flush=True)
         p = QPainter(self)
         origin = self._screen.geometry().topLeft()
 
@@ -64,6 +71,7 @@ class RegionSelector(QWidget):
 
         if self._shared['regions']:
             self._draw_toolbar(p)
+        print("[DEBUG] RegionSelector.paintEvent: done", flush=True)
 
     def _draw_toolbar(self, p):
         sw, sh = self.rect().width(), self.rect().height()
