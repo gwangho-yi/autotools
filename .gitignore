@@ -19,6 +19,7 @@ build/
 !auto-capture/auto-capture.spec
 !auto-capture/auto-capture-windows.spec
 !auto-capture/auto-capture-windows-x64.spec
+!auto-capture/auto-capture-windows-debug.spec
 !auto-clicker/auto-clicker.spec
 !auto-clicker/auto-clicker-windows.spec
 !auto-clicker/auto-clicker-windows-x64.spec

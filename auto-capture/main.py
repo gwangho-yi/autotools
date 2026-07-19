@@ -1,4 +1,6 @@
+import os
 import sys
+import traceback
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtGui import QCursor
 from PySide6.QtCore import Qt, QObject, Signal
@@ -10,6 +12,30 @@ from ui.region_select import select_regions
 from core.monitor import MonitorThread
 from core.ipc_client import IpcClient
 from core.color_monitor import ColorMonitorThread
+
+
+def _install_crash_logger() -> None:
+    """Qt 슬롯 안에서 잡히지 않은 예외를 홈 디렉터리 로그 파일에 남긴다.
+
+    PyInstaller windowed(console=False) 빌드에서는 sys.stderr가 None이라,
+    기본 예외 출력 시도 자체가 다시 예외를 던지며 아무 흔적 없이 앱이
+    죽는 경우가 있다. 그걸 막고 항상 파일로 기록되게 한다.
+    """
+    log_path = os.path.join(os.path.expanduser("~"), "auto-capture-crash.log")
+
+    def _hook(exc_type, exc_value, exc_tb):
+        try:
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write("=== auto-capture crash ===\n")
+                traceback.print_exception(exc_type, exc_value, exc_tb, file=f)
+        except Exception:
+            pass
+        try:
+            sys.__excepthook__(exc_type, exc_value, exc_tb)
+        except Exception:
+            pass
+
+    sys.excepthook = _hook
 
 
 class _F6Relay(QObject):
@@ -26,6 +52,7 @@ class _F6Relay(QObject):
 
 
 def main():
+    _install_crash_logger()
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 
