@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSpinBox,
-    QStackedWidget
+    QStackedWidget, QAbstractSpinBox
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -80,6 +80,7 @@ class ColorCaptureTab(QWidget):
             color_row.addWidget(lbl)
             spin = QSpinBox()
             spin.setRange(0, 255)
+            spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
             spin.setStyleSheet(_SPIN_STYLE)
             spin.setFixedWidth(70)
             spin.valueChanged.connect(self._on_rgb_spin_changed)
