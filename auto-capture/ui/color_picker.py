@@ -204,7 +204,10 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     # pynput 키보드 리스너는 Windows 전용.
     # macOS에서 pynput은 TSMGetInputSourceProperty를 백그라운드 스레드에서
     # 호출해 크래시 발생 → macOS/Linux는 Qt 이벤트 필터만 사용.
-    if sys.platform == "win32":
+    # [진단용 임시 비활성화] main.py의 F6 GlobalHotKeys와 동시에 두 번째 전역
+    # pynput 훅을 설치하는 게 이 VM에서 크래시 원인인지 확인하기 위해 잠시 끈다.
+    # 원인 확인되면 `sys.platform == "win32"`로 되돌린다.
+    if False and sys.platform == "win32":
         print("[DEBUG] pick_pixel_color: win32 branch entered", flush=True)
         try:
             from pynput import keyboard as _kb
