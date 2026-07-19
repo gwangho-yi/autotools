@@ -1,9 +1,7 @@
-import sys
-
 import numpy as np
 import mss
 from PySide6.QtWidgets import QWidget, QApplication
-from PySide6.QtCore import Qt, QEventLoop, QPoint, QObject, QEvent, Signal, QRect
+from PySide6.QtCore import Qt, QEventLoop, QPoint, QRect
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QGuiApplication, QImage, QCursor
 
 _LOUPE_SRC = 15        # 캡처할 원본 영역 한 변(px)
@@ -21,31 +19,6 @@ def _loupe_geometry(cursor_x: int, panel_w: int, screen_w: int) -> int:
     return max(0, cursor_x - _PANEL_MARGIN - panel_w)
 
 
-class _EscFilter(QObject):
-    def __init__(self, callback):
-        super().__init__()
-        self._callback = callback
-
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Escape:
-            self._callback()
-            return True
-        return False
-
-
-class _EscRelay(QObject):
-    """pynput 스레드 → Qt 메인 스레드 안전 브릿지 (Windows 전용)."""
-
-    _sig = Signal()
-
-    def __init__(self, callback):
-        super().__init__()
-        self._sig.connect(callback, Qt.ConnectionType.QueuedConnection)
-
-    def notify(self):
-        self._sig.emit()
-
-
 class _ColorPickerOverlay(QWidget):
     def __init__(self, screen, shared: dict):
         super().__init__()
@@ -60,6 +33,10 @@ class _ColorPickerOverlay(QWidget):
             Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
+        # StrongFocus가 없으면 오버레이가 키보드 이벤트를 못 받아 keyPressEvent가
+        # 절대 호출되지 않는다. region_select.py와 동일한 패턴으로, 이 포커스 설정
+        # 덕분에 pynput 전역 훅 없이 ESC를 순수 Qt로 처리할 수 있다.
+        self.setFocusPolicy(Qt.StrongFocus)
         self.setCursor(Qt.CrossCursor)
         self.setMouseTracking(True)
         self.show()
@@ -147,6 +124,10 @@ class _ColorPickerOverlay(QWidget):
             p.drawText(px, py + _LOUPE_PANEL, _LOUPE_PANEL, _TEXT_H,
                        Qt.AlignCenter, f"RGB({r}, {g}, {b})")
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self._shared["close_fn"]()
+
     def mousePressEvent(self, event):
         # event.globalPosition()으로 동기화한다 — 이벤트 발생 시점에 박제된 좌표라
         # QCursor.pos()의 라이브 재조회로 인한 시간차 오차가 없다.
@@ -162,54 +143,34 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     """풀스크린 오버레이로 픽셀 색을 샘플링. (글로벌x, 글로벌y, (r,g,b)) 반환, ESC시 None."""
     loop = QEventLoop()
     shared: dict = {"result": None, "loop": loop, "widgets": [],
-                    "close_fn": None, "_closed": False, "_esc_filter": None,
-                    "_kb_listener": None, "_relay": None}
+                    "close_fn": None, "_closed": False}
 
     def close_all():
         if shared["_closed"]:
             return
         shared["_closed"] = True
-        if shared["_kb_listener"] is not None:
-            try:
-                shared["_kb_listener"].stop()
-            except Exception:
-                pass
-        app = QApplication.instance()
-        if app and shared["_esc_filter"]:
-            app.removeEventFilter(shared["_esc_filter"])
         for w in shared["widgets"]:
             w.close()
         loop.quit()
 
     shared["close_fn"] = close_all
-    esc_filter = _EscFilter(close_all)
-    shared["_esc_filter"] = esc_filter
-    QApplication.instance().installEventFilter(esc_filter)
 
-    # pynput 키보드 리스너는 Windows 전용.
-    # macOS에서 pynput은 TSMGetInputSourceProperty를 백그라운드 스레드에서
-    # 호출해 크래시 발생 → macOS/Linux는 Qt 이벤트 필터만 사용.
-    if sys.platform == "win32":
-        try:
-            from pynput import keyboard as _kb
-
-            relay = _EscRelay(close_all)
-            shared["_relay"] = relay
-
-            def _on_press(key):
-                if key == _kb.Key.esc:
-                    relay.notify()
-                    return False
-
-            listener = _kb.Listener(on_press=_on_press)
-            listener.start()
-            shared["_kb_listener"] = listener
-        except Exception:
-            pass
-
+    # ESC 취소는 오버레이의 keyPressEvent로 순수 Qt에서 처리한다. 예전에는 Windows
+    # 에서 두 번째 pynput 전역 키보드 훅을 설치했으나, main.py의 F6 GlobalHotKeys와
+    # 동일 프로세스에 저수준 훅이 이중으로 걸려 네이티브 크래시(프로세스는 좀비로
+    # 잔존)를 일으켰다. 오버레이에 StrongFocus를 주고 아래에서 activateWindow/
+    # setFocus 하면 키 이벤트가 정상 전달되므로 플랫폼 분기 없이 동작한다.
     for screen in QGuiApplication.screens():
         overlay = _ColorPickerOverlay(screen, shared)
         shared["widgets"].append(overlay)
+
+    # 메인 창을 숨긴 상태에서 열리므로, 첫 오버레이를 명시적으로 활성화해
+    # 키보드 포커스를 확보한다(없으면 ESC 키 이벤트가 어디로도 전달되지 않는다).
+    if shared["widgets"]:
+        primary = shared["widgets"][0]
+        primary.activateWindow()
+        primary.raise_()
+        primary.setFocus()
 
     loop.exec()
     return shared["result"]
