@@ -160,6 +160,7 @@ class _ColorPickerOverlay(QWidget):
 
 def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     """풀스크린 오버레이로 픽셀 색을 샘플링. (글로벌x, 글로벌y, (r,g,b)) 반환, ESC시 None."""
+    print("[DEBUG] pick_pixel_color: enter", flush=True)
     loop = QEventLoop()
     shared: dict = {"result": None, "loop": loop, "widgets": [],
                     "close_fn": None, "_closed": False, "_esc_filter": None,
@@ -185,16 +186,20 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     esc_filter = _EscFilter(close_all)
     shared["_esc_filter"] = esc_filter
     QApplication.instance().installEventFilter(esc_filter)
+    print("[DEBUG] pick_pixel_color: qt esc filter installed", flush=True)
 
     # pynput 키보드 리스너는 Windows 전용.
     # macOS에서 pynput은 TSMGetInputSourceProperty를 백그라운드 스레드에서
     # 호출해 크래시 발생 → macOS/Linux는 Qt 이벤트 필터만 사용.
     if sys.platform == "win32":
+        print("[DEBUG] pick_pixel_color: win32 branch entered", flush=True)
         try:
             from pynput import keyboard as _kb
+            print("[DEBUG] pick_pixel_color: pynput.keyboard imported", flush=True)
 
             relay = _EscRelay(close_all)
             shared["_relay"] = relay
+            print("[DEBUG] pick_pixel_color: _EscRelay created", flush=True)
 
             def _on_press(key):
                 if key == _kb.Key.esc:
@@ -202,14 +207,21 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
                     return False
 
             listener = _kb.Listener(on_press=_on_press)
+            print("[DEBUG] pick_pixel_color: about to start pynput Listener", flush=True)
             listener.start()
+            print("[DEBUG] pick_pixel_color: pynput Listener started", flush=True)
             shared["_kb_listener"] = listener
-        except Exception:
-            pass
+        except Exception as e:
+            print("[DEBUG] pick_pixel_color: win32 esc listener setup FAILED:", repr(e), flush=True)
 
-    for screen in QGuiApplication.screens():
+    print("[DEBUG] pick_pixel_color: creating overlays for", len(QGuiApplication.screens()), "screen(s)", flush=True)
+    for i, screen in enumerate(QGuiApplication.screens()):
+        print(f"[DEBUG] pick_pixel_color: creating overlay {i} for screen {screen.name()!r}", flush=True)
         overlay = _ColorPickerOverlay(screen, shared)
         shared["widgets"].append(overlay)
+        print(f"[DEBUG] pick_pixel_color: overlay {i} created", flush=True)
 
+    print("[DEBUG] pick_pixel_color: entering loop.exec()", flush=True)
     loop.exec()
+    print("[DEBUG] pick_pixel_color: loop.exec() returned, result =", shared["result"], flush=True)
     return shared["result"]

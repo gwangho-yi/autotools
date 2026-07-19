@@ -164,13 +164,18 @@ class ColorCaptureTab(QWidget):
         self._start_btn.setEnabled(self._target_rgb is not None)
 
     def _on_pick_color(self) -> None:
+        print("[DEBUG] _on_pick_color: start", flush=True)
         win = self.window()
         win.hide()
+        print("[DEBUG] _on_pick_color: window hidden", flush=True)
         QApplication.processEvents()
+        print("[DEBUG] _on_pick_color: calling pick_pixel_color()", flush=True)
         result = pick_pixel_color()
+        print("[DEBUG] _on_pick_color: pick_pixel_color() returned", result, flush=True)
         win.show()
         win.raise_()
         win.activateWindow()
+        print("[DEBUG] _on_pick_color: window restored", flush=True)
         if result is None:
             return
         _x, _y, rgb = result
