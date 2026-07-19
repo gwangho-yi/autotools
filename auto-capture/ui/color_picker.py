@@ -69,13 +69,9 @@ class _ColorPickerOverlay(QWidget):
         self.setGeometry(screen.geometry())
 
     def mouseMoveEvent(self, event):
-        print("[DEBUG] mouseMoveEvent: enter", flush=True)
         self._sync_cursor_pos(event)
-        print("[DEBUG] mouseMoveEvent: cursor pos synced", flush=True)
         self._update_loupe()
-        print("[DEBUG] mouseMoveEvent: loupe updated", flush=True)
         self.update()
-        print("[DEBUG] mouseMoveEvent: update() called", flush=True)
 
     def _sync_cursor_pos(self, event) -> None:
         # QCursor.pos()는 "지금 이 순간" 시스템에 다시 묻는 라이브 조회라서, 이벤트가
@@ -93,31 +89,23 @@ class _ColorPickerOverlay(QWidget):
         half = _LOUPE_SRC // 2
         region = {"left": gx - half, "top": gy - half,
                   "width": _LOUPE_SRC, "height": _LOUPE_SRC}
-        print("[DEBUG] _update_loupe: about to create mss.mss(), region =", region, flush=True)
         try:
             with mss.mss() as sct:
-                print("[DEBUG] _update_loupe: mss.mss() created, about to grab", flush=True)
                 raw = np.array(sct.grab(region))[:, :, :3]  # BGR
-                print("[DEBUG] _update_loupe: grab succeeded, shape =", raw.shape, flush=True)
-        except Exception as e:
-            print("[DEBUG] _update_loupe: grab FAILED:", repr(e), flush=True)
+        except Exception:
             return  # 경계 근처 캡처 실패 → 조용히 스킵, 다음 move에서 재시도
         if raw.shape[0] != _LOUPE_SRC or raw.shape[1] != _LOUPE_SRC:
-            print("[DEBUG] _update_loupe: unexpected shape, skipping", flush=True)
             return
         b, g, r = int(raw[half, half, 0]), int(raw[half, half, 1]), int(raw[half, half, 2])
         self._center_rgb = (r, g, b)
-        print("[DEBUG] _update_loupe: center rgb =", self._center_rgb, flush=True)
         # BGR → RGB 후 QImage 생성, nearest-neighbor 8배 확대
         rgb = raw[:, :, ::-1].copy()
         img = QImage(rgb.data, _LOUPE_SRC, _LOUPE_SRC,
                      3 * _LOUPE_SRC, QImage.Format_RGB888)
         self._loupe_img = img.scaled(_LOUPE_PANEL, _LOUPE_PANEL,
                                      Qt.IgnoreAspectRatio, Qt.FastTransformation)
-        print("[DEBUG] _update_loupe: loupe image built", flush=True)
 
     def paintEvent(self, event):
-        print("[DEBUG] paintEvent: enter", flush=True)
         p = QPainter(self)
         # 주의: 이 창은 실제 화면에 렌더링되는 반투명 창이라, 여기서 그리는 모든 것이
         # mss.grab()의 캡처 대상에 실제 픽셀처럼 함께 찍힌다. 전체화면을 덮는 딤이나
@@ -158,7 +146,6 @@ class _ColorPickerOverlay(QWidget):
             p.setFont(txt_font)
             p.drawText(px, py + _LOUPE_PANEL, _LOUPE_PANEL, _TEXT_H,
                        Qt.AlignCenter, f"RGB({r}, {g}, {b})")
-        print("[DEBUG] paintEvent: done", flush=True)
 
     def mousePressEvent(self, event):
         # event.globalPosition()으로 동기화한다 — 이벤트 발생 시점에 박제된 좌표라
@@ -173,7 +160,6 @@ class _ColorPickerOverlay(QWidget):
 
 def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     """풀스크린 오버레이로 픽셀 색을 샘플링. (글로벌x, 글로벌y, (r,g,b)) 반환, ESC시 None."""
-    print("[DEBUG] pick_pixel_color: enter", flush=True)
     loop = QEventLoop()
     shared: dict = {"result": None, "loop": loop, "widgets": [],
                     "close_fn": None, "_closed": False, "_esc_filter": None,
@@ -199,23 +185,16 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     esc_filter = _EscFilter(close_all)
     shared["_esc_filter"] = esc_filter
     QApplication.instance().installEventFilter(esc_filter)
-    print("[DEBUG] pick_pixel_color: qt esc filter installed", flush=True)
 
     # pynput 키보드 리스너는 Windows 전용.
     # macOS에서 pynput은 TSMGetInputSourceProperty를 백그라운드 스레드에서
     # 호출해 크래시 발생 → macOS/Linux는 Qt 이벤트 필터만 사용.
-    # [진단용 임시 비활성화] main.py의 F6 GlobalHotKeys와 동시에 두 번째 전역
-    # pynput 훅을 설치하는 게 이 VM에서 크래시 원인인지 확인하기 위해 잠시 끈다.
-    # 원인 확인되면 `sys.platform == "win32"`로 되돌린다.
-    if False and sys.platform == "win32":
-        print("[DEBUG] pick_pixel_color: win32 branch entered", flush=True)
+    if sys.platform == "win32":
         try:
             from pynput import keyboard as _kb
-            print("[DEBUG] pick_pixel_color: pynput.keyboard imported", flush=True)
 
             relay = _EscRelay(close_all)
             shared["_relay"] = relay
-            print("[DEBUG] pick_pixel_color: _EscRelay created", flush=True)
 
             def _on_press(key):
                 if key == _kb.Key.esc:
@@ -223,21 +202,14 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
                     return False
 
             listener = _kb.Listener(on_press=_on_press)
-            print("[DEBUG] pick_pixel_color: about to start pynput Listener", flush=True)
             listener.start()
-            print("[DEBUG] pick_pixel_color: pynput Listener started", flush=True)
             shared["_kb_listener"] = listener
-        except Exception as e:
-            print("[DEBUG] pick_pixel_color: win32 esc listener setup FAILED:", repr(e), flush=True)
+        except Exception:
+            pass
 
-    print("[DEBUG] pick_pixel_color: creating overlays for", len(QGuiApplication.screens()), "screen(s)", flush=True)
-    for i, screen in enumerate(QGuiApplication.screens()):
-        print(f"[DEBUG] pick_pixel_color: creating overlay {i} for screen {screen.name()!r}", flush=True)
+    for screen in QGuiApplication.screens():
         overlay = _ColorPickerOverlay(screen, shared)
         shared["widgets"].append(overlay)
-        print(f"[DEBUG] pick_pixel_color: overlay {i} created", flush=True)
 
-    print("[DEBUG] pick_pixel_color: entering loop.exec()", flush=True)
     loop.exec()
-    print("[DEBUG] pick_pixel_color: loop.exec() returned, result =", shared["result"], flush=True)
     return shared["result"]
