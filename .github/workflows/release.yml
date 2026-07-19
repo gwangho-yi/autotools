@@ -47,7 +47,7 @@ jobs:
         working-directory: auto-capture
         run: |
           uv sync
-          uv add pyinstaller
+          uv add pyinstaller pynput
           uv run python scripts/make_icon.py
           uv run python scripts/make_sound.py
           uv run pyinstaller auto-capture-windows-x64.spec --clean --noconfirm
