@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSpinBox,
-    QStackedWidget, QAbstractSpinBox
+    QStackedWidget, QAbstractSpinBox, QApplication
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -164,7 +164,13 @@ class ColorCaptureTab(QWidget):
         self._start_btn.setEnabled(self._target_rgb is not None)
 
     def _on_pick_color(self) -> None:
+        win = self.window()
+        win.hide()
+        QApplication.processEvents()
         result = pick_pixel_color()
+        win.show()
+        win.raise_()
+        win.activateWindow()
         if result is None:
             return
         _x, _y, rgb = result

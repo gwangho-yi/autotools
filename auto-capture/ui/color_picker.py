@@ -33,6 +33,19 @@ class _EscFilter(QObject):
         return False
 
 
+class _EscRelay(QObject):
+    """pynput 스레드 → Qt 메인 스레드 안전 브릿지 (Windows 전용)."""
+
+    _sig = Signal()
+
+    def __init__(self, callback):
+        super().__init__()
+        self._sig.connect(callback, Qt.ConnectionType.QueuedConnection)
+
+    def notify(self):
+        self._sig.emit()
+
+
 class _ColorPickerOverlay(QWidget):
     def __init__(self, screen, shared: dict):
         super().__init__()
@@ -149,12 +162,18 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     """풀스크린 오버레이로 픽셀 색을 샘플링. (글로벌x, 글로벌y, (r,g,b)) 반환, ESC시 None."""
     loop = QEventLoop()
     shared: dict = {"result": None, "loop": loop, "widgets": [],
-                    "close_fn": None, "_closed": False, "_esc_filter": None}
+                    "close_fn": None, "_closed": False, "_esc_filter": None,
+                    "_kb_listener": None, "_relay": None}
 
     def close_all():
         if shared["_closed"]:
             return
         shared["_closed"] = True
+        if shared["_kb_listener"] is not None:
+            try:
+                shared["_kb_listener"].stop()
+            except Exception:
+                pass
         app = QApplication.instance()
         if app and shared["_esc_filter"]:
             app.removeEventFilter(shared["_esc_filter"])
@@ -166,6 +185,27 @@ def pick_pixel_color() -> tuple[int, int, tuple[int, int, int]] | None:
     esc_filter = _EscFilter(close_all)
     shared["_esc_filter"] = esc_filter
     QApplication.instance().installEventFilter(esc_filter)
+
+    # pynput 키보드 리스너는 Windows 전용.
+    # macOS에서 pynput은 TSMGetInputSourceProperty를 백그라운드 스레드에서
+    # 호출해 크래시 발생 → macOS/Linux는 Qt 이벤트 필터만 사용.
+    if sys.platform == "win32":
+        try:
+            from pynput import keyboard as _kb
+
+            relay = _EscRelay(close_all)
+            shared["_relay"] = relay
+
+            def _on_press(key):
+                if key == _kb.Key.esc:
+                    relay.notify()
+                    return False
+
+            listener = _kb.Listener(on_press=_on_press)
+            listener.start()
+            shared["_kb_listener"] = listener
+        except Exception:
+            pass
 
     for screen in QGuiApplication.screens():
         overlay = _ColorPickerOverlay(screen, shared)
