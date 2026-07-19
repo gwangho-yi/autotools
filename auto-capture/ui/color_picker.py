@@ -69,9 +69,13 @@ class _ColorPickerOverlay(QWidget):
         self.setGeometry(screen.geometry())
 
     def mouseMoveEvent(self, event):
+        print("[DEBUG] mouseMoveEvent: enter", flush=True)
         self._sync_cursor_pos(event)
+        print("[DEBUG] mouseMoveEvent: cursor pos synced", flush=True)
         self._update_loupe()
+        print("[DEBUG] mouseMoveEvent: loupe updated", flush=True)
         self.update()
+        print("[DEBUG] mouseMoveEvent: update() called", flush=True)
 
     def _sync_cursor_pos(self, event) -> None:
         # QCursor.pos()는 "지금 이 순간" 시스템에 다시 묻는 라이브 조회라서, 이벤트가
@@ -89,23 +93,31 @@ class _ColorPickerOverlay(QWidget):
         half = _LOUPE_SRC // 2
         region = {"left": gx - half, "top": gy - half,
                   "width": _LOUPE_SRC, "height": _LOUPE_SRC}
+        print("[DEBUG] _update_loupe: about to create mss.mss(), region =", region, flush=True)
         try:
             with mss.mss() as sct:
+                print("[DEBUG] _update_loupe: mss.mss() created, about to grab", flush=True)
                 raw = np.array(sct.grab(region))[:, :, :3]  # BGR
-        except Exception:
+                print("[DEBUG] _update_loupe: grab succeeded, shape =", raw.shape, flush=True)
+        except Exception as e:
+            print("[DEBUG] _update_loupe: grab FAILED:", repr(e), flush=True)
             return  # 경계 근처 캡처 실패 → 조용히 스킵, 다음 move에서 재시도
         if raw.shape[0] != _LOUPE_SRC or raw.shape[1] != _LOUPE_SRC:
+            print("[DEBUG] _update_loupe: unexpected shape, skipping", flush=True)
             return
         b, g, r = int(raw[half, half, 0]), int(raw[half, half, 1]), int(raw[half, half, 2])
         self._center_rgb = (r, g, b)
+        print("[DEBUG] _update_loupe: center rgb =", self._center_rgb, flush=True)
         # BGR → RGB 후 QImage 생성, nearest-neighbor 8배 확대
         rgb = raw[:, :, ::-1].copy()
         img = QImage(rgb.data, _LOUPE_SRC, _LOUPE_SRC,
                      3 * _LOUPE_SRC, QImage.Format_RGB888)
         self._loupe_img = img.scaled(_LOUPE_PANEL, _LOUPE_PANEL,
                                      Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        print("[DEBUG] _update_loupe: loupe image built", flush=True)
 
     def paintEvent(self, event):
+        print("[DEBUG] paintEvent: enter", flush=True)
         p = QPainter(self)
         # 주의: 이 창은 실제 화면에 렌더링되는 반투명 창이라, 여기서 그리는 모든 것이
         # mss.grab()의 캡처 대상에 실제 픽셀처럼 함께 찍힌다. 전체화면을 덮는 딤이나
@@ -146,6 +158,7 @@ class _ColorPickerOverlay(QWidget):
             p.setFont(txt_font)
             p.drawText(px, py + _LOUPE_PANEL, _LOUPE_PANEL, _TEXT_H,
                        Qt.AlignCenter, f"RGB({r}, {g}, {b})")
+        print("[DEBUG] paintEvent: done", flush=True)
 
     def mousePressEvent(self, event):
         # event.globalPosition()으로 동기화한다 — 이벤트 발생 시점에 박제된 좌표라
