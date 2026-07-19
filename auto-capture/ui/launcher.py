@@ -112,7 +112,7 @@ class Launcher(QWidget):
             }
             QTabBar::tab:selected { background: #4ecca3; color: #1a1a2e; font-weight: bold; }
         """)
-        self._tabs.addTab(self._build_capture_page(), "화면 변화")
+        self._tabs.addTab(self._build_capture_page(), "변경 감지")
         self.color_tab = ColorCaptureTab()
         self._tabs.addTab(self.color_tab, "컬러 감지")
         outer.addWidget(self._tabs)

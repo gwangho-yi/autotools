@@ -210,7 +210,7 @@ class MainWindow(QWidget):
         """)
         tabs.addTab(self._build_clicker_page(), "순서 클릭")
         self.color_tab = ColorClickerTab()
-        tabs.addTab(self.color_tab, "컬러 클리커")
+        tabs.addTab(self.color_tab, "컬러 클릭")
         root.addWidget(tabs)
 
         # 알림음 컨트롤(음소거 버튼 + 볼륨) — 탭과 무관하게 항상 보이는 공유 영역
