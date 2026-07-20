@@ -6,6 +6,7 @@ requires-python = ">=3.14"
 dependencies = [
     "pyside6>=6.11.1",
     "pynput>=1.7.7",
+    "pyinstaller>=6.20.0",
 ]
 
 [project.optional-dependencies]
