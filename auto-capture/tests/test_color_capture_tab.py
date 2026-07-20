@@ -60,14 +60,36 @@ def test_start_opens_region_select_and_emits_params(qtbot, qapp):
         tab._on_pick_color()
     tab._tolerance.setValue(12)
 
-    with patch("ui.color_capture_tab.select_region",
-               return_value={"left": 0, "top": 0, "width": 10, "height": 10}):
+    with patch("ui.color_capture_tab.select_regions",
+               return_value=[{"left": 0, "top": 0, "width": 10, "height": 10}]):
         with qtbot.waitSignal(tab.start_requested, timeout=1000) as blocker:
             tab._start_btn.click()
-    region, rgb, tol = blocker.args
+    regions, rgb, tol = blocker.args
     assert rgb == (200, 100, 30)
     assert tol == 12
-    assert region["width"] == 10
+    assert regions[0]["width"] == 10
+
+
+def test_start_emits_all_selected_regions_including_overlapping(qtbot, qapp):
+    """겹치는 영역을 여러 개 그려도 전부(겹치는 부분 포함) 감시 대상으로 넘어가야 한다."""
+    from ui.color_capture_tab import ColorCaptureTab
+
+    tab = ColorCaptureTab()
+    qtbot.addWidget(tab)
+    with patch("ui.color_capture_tab.pick_pixel_color",
+               return_value=(50, 60, (200, 100, 30))):
+        tab._on_pick_color()
+
+    overlapping_regions = [
+        {"left": 0, "top": 0, "width": 100, "height": 100},
+        {"left": 50, "top": 50, "width": 100, "height": 100},  # 위 영역과 (50,50)-(100,100) 겹침
+    ]
+    with patch("ui.color_capture_tab.select_regions", return_value=overlapping_regions):
+        with qtbot.waitSignal(tab.start_requested, timeout=1000) as blocker:
+            tab._start_btn.click()
+
+    regions, _rgb, _tol = blocker.args
+    assert regions == overlapping_regions
 
 
 def test_start_cancelled_when_region_selection_cancelled(qtbot, qapp):
@@ -81,7 +103,7 @@ def test_start_cancelled_when_region_selection_cancelled(qtbot, qapp):
 
     emitted = []
     tab.start_requested.connect(lambda *args: emitted.append(args))
-    with patch("ui.color_capture_tab.select_region", return_value=None):
+    with patch("ui.color_capture_tab.select_regions", return_value=[]):
         tab._start_btn.click()
 
     assert emitted == []
@@ -134,8 +156,8 @@ def test_start_btn_reenabled_after_stopping(qtbot, qapp):
                return_value=(50, 60, (200, 100, 30))):
         tab._on_pick_color()
 
-    with patch("ui.color_capture_tab.select_region",
-               return_value={"left": 0, "top": 0, "width": 10, "height": 10}):
+    with patch("ui.color_capture_tab.select_regions",
+               return_value=[{"left": 0, "top": 0, "width": 10, "height": 10}]):
         tab._start_btn.click()
     assert not tab._start_btn.isEnabled()  # 영역 선택 중/모니터링 중에는 비활성
 

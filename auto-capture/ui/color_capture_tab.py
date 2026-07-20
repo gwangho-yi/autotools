@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 
 from ui.color_picker import pick_pixel_color
-from ui.region_select import select_region
+from ui.region_select import select_regions
 
 _BTN_GREEN = """
     QPushButton {
@@ -45,7 +45,7 @@ _SPIN_STYLE = """
 
 
 class ColorCaptureTab(QWidget):
-    start_requested = Signal(dict, tuple, int)
+    start_requested = Signal(list, tuple, int)
     stop_requested = Signal()
     pause_requested = Signal()
     resume_requested = Signal()
@@ -53,7 +53,7 @@ class ColorCaptureTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._target_rgb: tuple[int, int, int] | None = None
-        self._region: dict | None = None
+        self._regions: list[dict] | None = None
         self._build_ui()
 
     @property
@@ -61,8 +61,8 @@ class ColorCaptureTab(QWidget):
         return self._target_rgb
 
     @property
-    def region(self) -> dict | None:
-        return self._region
+    def regions(self) -> list[dict] | None:
+        return self._regions
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -130,7 +130,7 @@ class ColorCaptureTab(QWidget):
         self._btn_stack.addWidget(self._start_btn)
 
         # Page 1: monitoring
-        self._pause_btn = QPushButton("일시정지 (F6)")
+        self._pause_btn = QPushButton("일시정지 (Ctrl+F6)")
         self._pause_btn.setFixedHeight(44)
         self._pause_btn.setStyleSheet(_BTN_OUTLINE)
         self._pause_btn.clicked.connect(lambda: self.pause_requested.emit())
@@ -141,7 +141,7 @@ class ColorCaptureTab(QWidget):
         p2_l = QHBoxLayout(p2)
         p2_l.setContentsMargins(0, 0, 0, 0)
         p2_l.setSpacing(8)
-        self._resume_btn = QPushButton("재시작 (F6)")
+        self._resume_btn = QPushButton("재시작 (Ctrl+F6)")
         self._resume_btn.setFixedHeight(44)
         self._resume_btn.setStyleSheet(_BTN_GREEN)
         self._resume_btn.clicked.connect(lambda: self.resume_requested.emit())
@@ -203,13 +203,13 @@ class ColorCaptureTab(QWidget):
             return
         self._start_btn.setEnabled(False)
         self._status_label.setText("영역을 선택하세요...")
-        region = select_region()
-        if region is None:
+        regions = select_regions()
+        if not regions:
             self._status_label.setText("")
             self._refresh_start_enabled()
             return
-        self._region = region
-        self.start_requested.emit(self._region, self._target_rgb, self._tolerance.value())
+        self._regions = regions
+        self.start_requested.emit(self._regions, self._target_rgb, self._tolerance.value())
 
     def set_monitoring(self, active: bool) -> None:
         self._btn_stack.setCurrentIndex(1 if active else 0)

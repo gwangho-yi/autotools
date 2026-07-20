@@ -65,7 +65,7 @@ def main():
 
     monitor_threads: list[MonitorThread] = []
     ipc_client: IpcClient | None = None
-    color_thread: ColorMonitorThread | None = None
+    color_threads: list[ColorMonitorThread] = []
     motion_paused = False
     color_paused = False
 
@@ -73,7 +73,7 @@ def main():
         nonlocal monitor_threads
         if any(t.isRunning() for t in monitor_threads):
             return
-        if color_thread is not None and color_thread.isRunning():
+        if any(t.isRunning() for t in color_threads):
             return
 
         regions = select_regions()
@@ -134,18 +134,23 @@ def main():
         for t in monitor_threads:
             t.wait()
 
-    def on_color_start(region, target_rgb, tolerance):
-        nonlocal color_thread
+    def on_color_start(regions, target_rgb, tolerance):
+        nonlocal color_threads
         # 상호배타: 기존 탭1 모니터가 돌고 있으면 무시
         if any(t.isRunning() for t in monitor_threads):
             return
-        if color_thread is not None and color_thread.isRunning():
+        if any(t.isRunning() for t in color_threads):
             return
-        t = ColorMonitorThread(region, target_rgb, tolerance)
-        t.color_detected.connect(on_color_detected)
-        t.stopped.connect(on_color_stopped)
-        t.start()
-        color_thread = t
+
+        threads = []
+        for region in regions:
+            t = ColorMonitorThread(region, target_rgb, tolerance)
+            t.color_detected.connect(on_color_detected)
+            t.stopped.connect(on_color_stopped)
+            t.start()
+            threads.append(t)
+        color_threads = threads
+
         launcher.color_tab.set_monitoring(True)
         launcher.color_tab.set_status("컬러 감시 중...")
         tray.show()
@@ -156,16 +161,16 @@ def main():
         QCursor.setPos(x, y)
         if ipc_client:
             ipc_client.send_color_match(x, y)
-        if color_thread is not None:
-            color_thread.pause()
+        for t in color_threads:
+            t.pause()
         color_paused = True
         launcher.color_tab.set_paused()
         launcher.color_tab.set_status(f"감지! ({x}, {y}) → 일시정지 (재시작을 눌러야 다시 감지)")
 
     def on_color_pause():
         nonlocal color_paused
-        if color_thread is not None and color_thread.isRunning():
-            color_thread.pause()
+        for t in color_threads:
+            t.pause()
         color_paused = True
         launcher.color_tab.set_paused()
         launcher.color_tab.set_status("일시정지 — 컬러 감시 대기 중")
@@ -173,20 +178,24 @@ def main():
 
     def on_color_resume():
         nonlocal color_paused
-        if color_thread is not None and not color_thread.isInterruptionRequested():
-            color_thread.resume()
+        for t in color_threads:
+            if not t.isInterruptionRequested():
+                t.resume()
         color_paused = False
         launcher.color_tab.set_monitoring(True)
         launcher.color_tab.set_status("컬러 감시 중...")
         tray.set_status("컬러 감시 중...")
 
     def on_color_stop():
-        nonlocal color_thread
-        if color_thread is not None and color_thread.isRunning():
-            color_thread.requestInterruption()
-            color_thread.wait()
+        for t in color_threads:
+            if t.isRunning():
+                t.requestInterruption()
+        for t in color_threads:
+            t.wait()
 
     def on_color_stopped():
+        if any(t.isRunning() for t in color_threads):
+            return
         launcher.color_tab.set_monitoring(False)
         launcher.color_tab.set_status("")
         if not any(t.isRunning() for t in monitor_threads):
@@ -220,7 +229,7 @@ def main():
     def on_f6_toggle():
         if any(t.isRunning() for t in monitor_threads):
             on_resume() if motion_paused else on_pause()
-        elif color_thread is not None and color_thread.isRunning():
+        elif any(t.isRunning() for t in color_threads):
             on_color_resume() if color_paused else on_color_pause()
 
     def on_quit():
@@ -244,7 +253,7 @@ def main():
     app.aboutToQuit.connect(on_quit)
 
     f6_relay = _F6Relay(on_f6_toggle)
-    hotkey_listener = keyboard.GlobalHotKeys({'<f6>': f6_relay.notify})
+    hotkey_listener = keyboard.GlobalHotKeys({'<ctrl>+<f6>': f6_relay.notify})
     hotkey_listener.start()
 
     launcher.show()
