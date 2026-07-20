@@ -41,6 +41,22 @@ class _FakeSct:
         return False
 
 
+def test_compensate_alpha_blend_recovers_white_from_overlay_tint():
+    from ui.color_picker import _compensate_alpha_blend
+    # 실제 흰색(255)이 알파1 검정 오버레이와 섞이면 254로 캡처된다(255*254/255=254) — 원복 확인
+    assert _compensate_alpha_blend((254, 254, 254)) == (255, 255, 255)
+
+
+def test_compensate_alpha_blend_leaves_black_unchanged():
+    from ui.color_picker import _compensate_alpha_blend
+    assert _compensate_alpha_blend((0, 0, 0)) == (0, 0, 0)
+
+
+def test_compensate_alpha_blend_clamps_to_255():
+    from ui.color_picker import _compensate_alpha_blend
+    assert _compensate_alpha_blend((255, 255, 255)) == (255, 255, 255)
+
+
 def test_click_result_uses_event_global_position_not_qcursor_pos(qtbot, qapp):
     from ui.color_picker import _ColorPickerOverlay
     from PySide6.QtGui import QGuiApplication
@@ -63,8 +79,31 @@ def test_click_result_uses_event_global_position_not_qcursor_pos(qtbot, qapp):
     assert shared["result"] == (500, 300, (30, 20, 10))
 
 
-def test_mouse_move_syncs_loupe_from_event_global_position(qtbot, qapp):
+def test_click_result_compensates_overlay_alpha_tint(qtbot, qapp):
     from ui.color_picker import _ColorPickerOverlay
+    from PySide6.QtGui import QGuiApplication
+
+    screen = QGuiApplication.primaryScreen()
+    shared = {"result": None, "close_fn": lambda: None}
+    overlay = _ColorPickerOverlay(screen, shared)
+    qtbot.addWidget(overlay)
+
+    # 실제 화면은 흰색(255)이지만, 오버레이 자신의 알파1 검정 채우기가 섞여
+    # mss에는 254로 캡처된다 — 보정을 거쳐 255로 복원돼야 한다
+    fake_frame = _fake_frame((254, 254, 254))
+
+    fake_event = MagicMock()
+    fake_event.globalPosition.return_value.toPoint.return_value = QPoint(500, 300)
+
+    with patch("ui.color_picker.QCursor.pos", return_value=QPoint(1, 1)), \
+         patch("ui.color_picker.mss.mss", return_value=_FakeSct(fake_frame)):
+        overlay.mousePressEvent(fake_event)
+
+    assert shared["result"] == (500, 300, (255, 255, 255))
+
+
+def test_mouse_move_syncs_loupe_from_event_global_position(qtbot, qapp):
+    from ui.color_picker import _ColorPickerOverlay, _compensate_alpha_blend
     from PySide6.QtGui import QGuiApplication
 
     screen = QGuiApplication.primaryScreen()
@@ -82,4 +121,5 @@ def test_mouse_move_syncs_loupe_from_event_global_position(qtbot, qapp):
         overlay.mouseMoveEvent(fake_event)
 
     assert overlay._global_pos == QPoint(640, 480)
-    assert overlay._center_rgb == (200, 100, 50)
+    # 오버레이 자신의 알파1 채우기가 섞인 캡처값(200,100,50)을 보정한 결과
+    assert overlay._center_rgb == _compensate_alpha_blend((200, 100, 50))

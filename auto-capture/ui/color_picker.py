@@ -10,6 +10,18 @@ _LOUPE_PANEL = _LOUPE_SRC * _LOUPE_SCALE  # 120px
 _PANEL_MARGIN = 20     # 커서와 패널 사이 여백
 _TEXT_H = 22           # 하단 RGB 텍스트 영역 높이
 
+# Windows에서 완전 투명(알파 0) 오버레이는 OS가 클릭을 그 밑의 창으로 그냥
+# 통과시켜버려 클릭을 못 받는다(WindowFromPoint 기준 실측 확인). 화면 전체를
+# 알파 1(육안으로 안 보이는 수준)로 채우면 클릭은 정상적으로 받으면서, 그
+# 블렌딩만큼은 알려진 값이라 아래 _compensate_alpha_blend로 역산 가능하다.
+_OVERLAY_ALPHA = 1
+_BLEND_FACTOR = (255 - _OVERLAY_ALPHA) / 255
+
+
+def _compensate_alpha_blend(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+    """오버레이 자신의 알파1 검정 채우기가 mss 캡처에 섞인 만큼을 역산해 복원."""
+    return tuple(min(255, round(c / _BLEND_FACTOR)) for c in rgb)
+
 
 def _loupe_geometry(cursor_x: int, panel_w: int, screen_w: int) -> int:
     """돋보기 패널 좌상단 x 좌표. 기본은 커서 오른쪽, 우측 여유 없으면 왼쪽 flip."""
@@ -74,7 +86,7 @@ class _ColorPickerOverlay(QWidget):
         if raw.shape[0] != _LOUPE_SRC or raw.shape[1] != _LOUPE_SRC:
             return
         b, g, r = int(raw[half, half, 0]), int(raw[half, half, 1]), int(raw[half, half, 2])
-        self._center_rgb = (r, g, b)
+        self._center_rgb = _compensate_alpha_blend((r, g, b))
         # BGR → RGB 후 QImage 생성, nearest-neighbor 8배 확대
         rgb = raw[:, :, ::-1].copy()
         img = QImage(rgb.data, _LOUPE_SRC, _LOUPE_SRC,
@@ -85,8 +97,12 @@ class _ColorPickerOverlay(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         # 주의: 이 창은 실제 화면에 렌더링되는 반투명 창이라, 여기서 그리는 모든 것이
-        # mss.grab()의 캡처 대상에 실제 픽셀처럼 함께 찍힌다. 전체화면을 덮는 딤이나
-        # 십자선처럼 캡처 영역과 겹치는 장식은 절대 그리지 않는다(색 샘플링 오염 방지).
+        # mss.grab()의 캡처 대상에 실제 픽셀처럼 함께 찍힌다. 화면 전체를 덮는 딤이나
+        # 십자선처럼 큰 장식은 그리지 않는다(색 샘플링 오염 방지). 다만 전체를 알파 0으로
+        # 완전히 비워두면 Windows가 그 영역의 클릭을 밑의 창으로 통과시켜버리므로, 육안으로
+        # 안 보이는 알파 1만큼은 전체에 깔아 클릭을 받고, 그만큼은 _compensate_alpha_blend로
+        # 역산해 색 샘플링에서 보정한다.
+        p.fillRect(self.rect(), QColor(0, 0, 0, _OVERLAY_ALPHA))
 
         x = self._cursor_pos.x()
         y = self._cursor_pos.y()
