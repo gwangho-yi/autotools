@@ -7,9 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g. v0.10)'
+        description: 'Release version (e.g. v0.2.0)'
         required: true
-        default: 'v0.10'
+        default: 'v0.2.0'
+      codename:
+        description: 'Optional codename shown in the release title (e.g. Catch Catch)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -26,9 +30,17 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            TAG="${GITHUB_REF#refs/tags/}"
+            CODENAME="$(git tag -l --format='%(contents:subject)' "$TAG")"
           else
-            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            TAG="${{ github.event.inputs.version }}"
+            CODENAME="${{ github.event.inputs.codename }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          if [[ -n "$CODENAME" ]]; then
+            echo "title=$TAG — $CODENAME" >> $GITHUB_OUTPUT
+          else
+            echo "title=$TAG" >> $GITHUB_OUTPUT
           fi
 
       - name: Install uv
@@ -63,7 +75,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          name: Release ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.title }}
           generate_release_notes: true
           files: |
             auto-clicker-${{ steps.ver.outputs.tag }}.exe

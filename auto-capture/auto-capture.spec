@@ -61,7 +61,7 @@ app = BUNDLE(
         'LSUIElement': True,
         'NSScreenCaptureUsageDescription': '화면 변화 감지를 위해 화면 접근이 필요합니다.',
         'CFBundleDisplayName': 'auto-capture',
-        'CFBundleVersion': '0.1.0',
-        'CFBundleShortVersionString': '0.1.0',
+        'CFBundleVersion': '0.2.0',
+        'CFBundleShortVersionString': '0.2.0',
     },
 )

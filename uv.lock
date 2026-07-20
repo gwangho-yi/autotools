@@ -19,7 +19,7 @@ wheels = [
 
 [[package]]
 name = "auto-capture"
-version = "0.1.0"
+version = "0.2.0"
 source = { virtual = "auto-capture" }
 dependencies = [
     { name = "mss" },
@@ -40,7 +40,7 @@ requires-dist = [
 
 [[package]]
 name = "auto-clicker"
-version = "0.1.0"
+version = "0.2.0"
 source = { virtual = "auto-clicker" }
 dependencies = [
     { name = "pyinstaller" },
