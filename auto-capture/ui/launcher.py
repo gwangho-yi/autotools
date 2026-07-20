@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget,
-    QTabWidget
+    QTabWidget, QApplication
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QGuiApplication, QPainter, QColor, QPen, QPixmap
@@ -91,8 +91,19 @@ class Launcher(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.is_monitoring_check = lambda: False
         self._build_ui()
         self._center()
+
+    def closeEvent(self, event):
+        # 감시 중이면 완전 종료 대신 트레이로 숨겨서 백그라운드 동작을 유지한다.
+        # 감시 중이 아닐 땐 백그라운드로 남겨둘 이유가 없으므로 X 버튼이 곧 앱 종료다.
+        if self.is_monitoring_check():
+            event.ignore()
+            self.hide()
+        else:
+            event.accept()
+            QApplication.quit()
 
     def _build_ui(self):
         self.setWindowTitle("auto-capture")

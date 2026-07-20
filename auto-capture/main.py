@@ -62,12 +62,25 @@ def main():
     except RuntimeError as e:
         QMessageBox.critical(None, "auto-capture", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
         sys.exit(1)
+    # 모니터링 중일 때만 트레이를 띄우면, 아무것도 안 돌고 창도 닫힌 상태에선
+    # "종료" 메뉴에 접근할 방법이 전혀 없어 프로세스가 고아로 남는다. 그래서
+    # 모니터링 여부와 상관없이 앱이 켜져 있는 동안은 항상 트레이를 띄워둔다.
+    tray.set_status("대기 중")
+    tray.show()
 
     monitor_threads: list[MonitorThread] = []
     ipc_client: IpcClient | None = None
     color_threads: list[ColorMonitorThread] = []
     motion_paused = False
     color_paused = False
+
+    def is_monitoring() -> bool:
+        return (
+            any(t.isRunning() for t in monitor_threads)
+            or any(t.isRunning() for t in color_threads)
+        )
+
+    launcher.is_monitoring_check = is_monitoring
 
     def on_start():
         nonlocal monitor_threads
@@ -91,7 +104,6 @@ def main():
         monitor_threads = threads
 
         launcher.set_monitoring(True, len(regions))
-        tray.show()
         tray.set_status(f"모니터링 중... ({len(regions)}개 영역)")
 
     def on_motion(x, y):
@@ -124,7 +136,7 @@ def main():
 
     def on_stopped():
         if not any(t.isRunning() for t in monitor_threads):
-            tray.hide()
+            tray.set_status("대기 중")
             launcher.reset()
 
     def on_stop():
@@ -153,7 +165,6 @@ def main():
 
         launcher.color_tab.set_monitoring(True)
         launcher.color_tab.set_status("컬러 감시 중...")
-        tray.show()
         tray.set_status("컬러 감시 중...")
 
     def on_color_detected(x, y):
@@ -199,7 +210,7 @@ def main():
         launcher.color_tab.set_monitoring(False)
         launcher.color_tab.set_status("")
         if not any(t.isRunning() for t in monitor_threads):
-            tray.hide()
+            tray.set_status("대기 중")
 
     def on_connect_toggle(checked: bool) -> None:
         nonlocal ipc_client
