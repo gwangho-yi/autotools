@@ -103,19 +103,19 @@ class ColorClickerTab(QWidget):
         ms_row.addStretch()
         layout.addLayout(ms_row)
 
-        self._min_spin.valueChanged.connect(self._on_min_changed)
-        self._max_spin.valueChanged.connect(self._on_max_changed)
+        self._min_spin.valueChanged.connect(self._clear_ms_error)
+        self._max_spin.valueChanged.connect(self._clear_ms_error)
 
         layout.addStretch()
 
         self._btn_stack = QStackedWidget()
         self._btn_stack.setFixedHeight(44)
-        self._start_btn = QPushButton("▶ 시작 (F7)")
+        self._start_btn = QPushButton("▶ 시작 (Ctrl+F7)")
         self._start_btn.setStyleSheet(_BTN_PRIMARY)
         self._start_btn.setEnabled(False)
-        self._start_btn.clicked.connect(lambda: self.start_requested.emit())
+        self._start_btn.clicked.connect(self._on_start_clicked)
         self._btn_stack.addWidget(self._start_btn)
-        self._stop_btn = QPushButton("■ 중지 (F7)")
+        self._stop_btn = QPushButton("■ 중지 (Ctrl+F7)")
         self._stop_btn.setStyleSheet(_BTN_DANGER)
         self._stop_btn.clicked.connect(lambda: self.stop_requested.emit())
         self._btn_stack.addWidget(self._stop_btn)
@@ -125,23 +125,15 @@ class ColorClickerTab(QWidget):
         self._status_label.setStyleSheet("color: #666666; font-size: 11px;")
         layout.addWidget(self._status_label)
 
-    def _on_min_changed(self, value: int) -> None:
-        if value > self._max_spin.value():
-            self._min_spin.blockSignals(True)
-            self._min_spin.setValue(self._max_spin.value())
-            self._min_spin.blockSignals(False)
-            self._ms_error_label.setText("최소값은 최대값보다 클 수 없습니다")
-        else:
-            self._ms_error_label.setText("")
+    def _clear_ms_error(self, _value: int) -> None:
+        self._ms_error_label.setText("")
 
-    def _on_max_changed(self, value: int) -> None:
-        if value < self._min_spin.value():
-            self._max_spin.blockSignals(True)
-            self._max_spin.setValue(self._min_spin.value())
-            self._max_spin.blockSignals(False)
-            self._ms_error_label.setText("최대값은 최소값보다 작을 수 없습니다")
-        else:
-            self._ms_error_label.setText("")
+    def _on_start_clicked(self) -> None:
+        if self._min_spin.value() > self._max_spin.value():
+            self._ms_error_label.setText("최소값은 최대값보다 클 수 없습니다")
+            return
+        self._ms_error_label.setText("")
+        self.start_requested.emit()
 
     def _on_pick_point(self) -> None:
         win = self.window()
