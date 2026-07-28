@@ -2,12 +2,12 @@ import os
 import sys
 import traceback
 from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QIcon
 from PySide6.QtCore import Qt, QObject, Signal
 from pynput import keyboard
 
-from ui.launcher import Launcher
-from ui.tray import TrayIcon
+from ui.launcher import Launcher, make_icon_pixmap
+from autotools_shared.tray import TrayIcon
 from autotools_shared.overlay.region_select import select_regions
 from core.monitor import MonitorThread
 from autotools_shared.ipc.client import IpcClient
@@ -46,7 +46,7 @@ def main():
 
     launcher = Launcher()
     try:
-        tray = TrayIcon()
+        tray = TrayIcon(QIcon(make_icon_pixmap(16)))
     except RuntimeError as e:
         QMessageBox.critical(None, "auto-capture", f"시스템 트레이를 사용할 수 없습니다:\n{e}")
         sys.exit(1)
