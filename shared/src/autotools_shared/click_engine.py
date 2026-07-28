@@ -2,7 +2,7 @@ import time
 from PySide6.QtCore import QThread, Signal
 from pynput.mouse import Button, Controller
 
-from core.models import ClickPoint
+from autotools_shared.models import ClickPoint
 
 _PRESS_HOLD_S = 0.02   # press→release hold time (20ms)
 _MOVE_SETTLE_S = 0.02  # position set → click settle time (20ms)

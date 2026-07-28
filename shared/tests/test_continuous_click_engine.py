@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 def test_intervals_within_range():
     """가우시안 샘플이 [min_ms, max_ms] 범위 내로 clip되는지 통계적으로 검증."""
-    from core.continuous_click_engine import ContinuousClickEngine
+    from autotools_shared.continuous_click_engine import ContinuousClickEngine
 
     eng = ContinuousClickEngine(x=0, y=0, min_ms=100, max_ms=300)
     samples = [eng._next_interval_ms() for _ in range(2000)]
@@ -16,8 +16,8 @@ def test_intervals_within_range():
 
 def test_continuous_clicks_repeatedly_until_stop(qtbot):
     mock_mouse = MagicMock()
-    with patch("core.continuous_click_engine.Controller", return_value=mock_mouse):
-        from core.continuous_click_engine import ContinuousClickEngine
+    with patch("autotools_shared.continuous_click_engine.Controller", return_value=mock_mouse):
+        from autotools_shared.continuous_click_engine import ContinuousClickEngine
 
         eng = ContinuousClickEngine(x=10, y=20, min_ms=10, max_ms=20)
         eng.start()

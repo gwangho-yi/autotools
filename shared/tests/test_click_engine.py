@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock, patch
-from core.models import ClickPoint
+from autotools_shared.models import ClickPoint
 
 
 def test_standalone_executes_all_points(qtbot):
     mock_mouse = MagicMock()
-    with patch("core.click_engine.Controller", return_value=mock_mouse):
-        from core.click_engine import ClickEngine
+    with patch("autotools_shared.click_engine.Controller", return_value=mock_mouse):
+        from autotools_shared.click_engine import ClickEngine
 
         engine = ClickEngine()
         engine.set_points([
@@ -23,8 +23,8 @@ def test_standalone_executes_all_points(qtbot):
 
 def test_capture_mode_clicks_immediately_then_sequence(qtbot):
     mock_mouse = MagicMock()
-    with patch("core.click_engine.Controller", return_value=mock_mouse):
-        from core.click_engine import ClickEngine
+    with patch("autotools_shared.click_engine.Controller", return_value=mock_mouse):
+        from autotools_shared.click_engine import ClickEngine
 
         engine = ClickEngine()
         engine.set_points([
@@ -42,8 +42,8 @@ def test_capture_mode_clicks_immediately_then_sequence(qtbot):
 
 def test_double_click(qtbot):
     mock_mouse = MagicMock()
-    with patch("core.click_engine.Controller", return_value=mock_mouse):
-        from core.click_engine import ClickEngine
+    with patch("autotools_shared.click_engine.Controller", return_value=mock_mouse):
+        from autotools_shared.click_engine import ClickEngine
 
         engine = ClickEngine()
         engine.set_points([ClickPoint(x=50, y=50, ms=10, click_type="double")])
@@ -60,8 +60,8 @@ def test_double_click(qtbot):
 def test_sequence_finished_emitted(qtbot):
     """시퀀스 완료 시 sequence_finished 시그널이 발생하는지 확인"""
     mock_mouse = MagicMock()
-    with patch("core.click_engine.Controller", return_value=mock_mouse):
-        from core.click_engine import ClickEngine
+    with patch("autotools_shared.click_engine.Controller", return_value=mock_mouse):
+        from autotools_shared.click_engine import ClickEngine
 
         engine = ClickEngine()
         engine.set_points([ClickPoint(x=100, y=200, ms=10, click_type="left")])
@@ -74,8 +74,8 @@ def test_sequence_finished_emitted(qtbot):
 def test_sequence_finished_not_emitted_on_interrupt(qtbot):
     """인터럽트로 중단 시 sequence_finished가 발생하지 않는지 확인"""
     mock_mouse = MagicMock()
-    with patch("core.click_engine.Controller", return_value=mock_mouse):
-        from core.click_engine import ClickEngine
+    with patch("autotools_shared.click_engine.Controller", return_value=mock_mouse):
+        from autotools_shared.click_engine import ClickEngine
 
         engine = ClickEngine()
         engine.set_points([ClickPoint(x=100, y=200, ms=10000, click_type="left")])
@@ -89,8 +89,8 @@ def test_sequence_finished_not_emitted_on_interrupt(qtbot):
 
 def test_start_from_color_moves_to_coord_then_sequence(qtbot):
     mock_mouse = MagicMock()
-    with patch("core.click_engine.Controller", return_value=mock_mouse):
-        from core.click_engine import ClickEngine
+    with patch("autotools_shared.click_engine.Controller", return_value=mock_mouse):
+        from autotools_shared.click_engine import ClickEngine
 
         engine = ClickEngine()
         engine.set_points([ClickPoint(x=100, y=200, ms=10, click_type="left")])

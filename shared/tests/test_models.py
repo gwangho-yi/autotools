@@ -1,4 +1,4 @@
-from core.models import ClickPoint
+from autotools_shared.models import ClickPoint
 
 
 def test_delay_ms_default():

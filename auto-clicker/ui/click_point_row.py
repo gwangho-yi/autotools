@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal
 
-from core.models import ClickPoint
+from autotools_shared.models import ClickPoint
 
 
 def _spin_style() -> str:

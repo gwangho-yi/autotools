@@ -34,10 +34,10 @@ def _spinbox_style() -> str:
     QSpinBox::down-arrow {{ image: url("{dn}"); width: 9px; height: 6px; }}
     """
 
-from core.alert import AlertRepeater
-from core.models import ClickPoint
-from core.click_engine import ClickEngine
-from core.continuous_click_engine import ContinuousClickEngine
+from autotools_shared.alert import AlertRepeater
+from autotools_shared.models import ClickPoint
+from autotools_shared.click_engine import ClickEngine
+from autotools_shared.continuous_click_engine import ContinuousClickEngine
 from core.ipc_server import IpcServer
 from ui.point_picker import pick_point
 from ui.click_point_row import ClickPointRow

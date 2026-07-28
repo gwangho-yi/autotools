@@ -8,7 +8,7 @@ from PySide6.QtCore import QThread
 if getattr(sys, "frozen", False):
     _base = Path(sys._MEIPASS)
 else:
-    _base = Path(__file__).parent.parent
+    _base = Path(__file__).parent
 
 _SOUND = _base / "assets" / "notify.wav"
 
