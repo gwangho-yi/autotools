@@ -1,2 +1,5 @@
 [tool.uv.workspace]
-members = ["auto-capture", "auto-clicker"]
+members = ["shared", "auto-capture", "auto-clicker"]
+
+[tool.uv.sources]
+autotools_shared = { workspace = true }
