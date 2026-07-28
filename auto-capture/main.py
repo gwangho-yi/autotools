@@ -11,6 +11,7 @@ from ui.tray import TrayIcon
 from autotools_shared.overlay.region_select import select_regions
 from core.monitor import MonitorThread
 from autotools_shared.ipc.client import IpcClient
+from autotools_shared.hotkey import HotkeyRelay
 from core.color_monitor import ColorMonitorThread
 
 
@@ -36,19 +37,6 @@ def _install_crash_logger() -> None:
             pass
 
     sys.excepthook = _hook
-
-
-class _F6Relay(QObject):
-    """pynput 스레드 → Qt 메인 스레드 안전 브릿지."""
-
-    triggered = Signal()
-
-    def __init__(self, callback):
-        super().__init__()
-        self.triggered.connect(callback, Qt.ConnectionType.QueuedConnection)
-
-    def notify(self):
-        self.triggered.emit()
 
 
 def main():
@@ -263,7 +251,7 @@ def main():
     tray.open_requested.connect(on_open)
     app.aboutToQuit.connect(on_quit)
 
-    f6_relay = _F6Relay(on_f6_toggle)
+    f6_relay = HotkeyRelay(on_f6_toggle)
     hotkey_listener = keyboard.GlobalHotKeys({'<ctrl>+<f6>': f6_relay.notify})
     hotkey_listener.start()
 

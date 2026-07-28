@@ -39,6 +39,7 @@ from autotools_shared.models import ClickPoint
 from autotools_shared.click_engine import ClickEngine
 from autotools_shared.continuous_click_engine import ContinuousClickEngine
 from autotools_shared.ipc.server import IpcServer
+from autotools_shared.hotkey import HotkeyRelay
 from autotools_shared.overlay.point_picker import pick_point
 from ui.click_point_row import ClickPointRow
 from ui.capture_row import CaptureRow
@@ -96,19 +97,6 @@ _BTN_MUTE = """
 
 
 
-class _F6Relay(QObject):
-    """pynput 스레드 → Qt 메인 스레드 안전 브릿지."""
-
-    triggered = Signal()
-
-    def __init__(self, callback):
-        super().__init__()
-        self.triggered.connect(callback, Qt.ConnectionType.QueuedConnection)
-
-    def notify(self):
-        self.triggered.emit()
-
-
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -144,7 +132,7 @@ class MainWindow(QWidget):
             self._on_color_match, Qt.ConnectionType.QueuedConnection
         )
         self._ipc.start()
-        self._f6_relay = _F6Relay(self._on_f6_toggle)
+        self._f6_relay = HotkeyRelay(self._on_f6_toggle)
         self._hotkey_listener = keyboard.GlobalHotKeys({'<ctrl>+<f7>': self._f6_relay.notify})
         self._hotkey_listener.start()
         self._center()
