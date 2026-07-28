@@ -8,7 +8,7 @@ from pynput import keyboard
 
 from ui.launcher import Launcher
 from ui.tray import TrayIcon
-from ui.region_select import select_regions
+from autotools_shared.overlay.region_select import select_regions
 from core.monitor import MonitorThread
 from autotools_shared.ipc.client import IpcClient
 from core.color_monitor import ColorMonitorThread

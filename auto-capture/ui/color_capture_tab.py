@@ -4,8 +4,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
-from ui.color_picker import pick_pixel_color
-from ui.region_select import select_regions
+from autotools_shared.overlay.color_picker import pick_pixel_color
+from autotools_shared.overlay.region_select import select_regions
 
 _BTN_GREEN = """
     QPushButton {

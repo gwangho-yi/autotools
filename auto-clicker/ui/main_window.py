@@ -39,7 +39,7 @@ from autotools_shared.models import ClickPoint
 from autotools_shared.click_engine import ClickEngine
 from autotools_shared.continuous_click_engine import ContinuousClickEngine
 from autotools_shared.ipc.server import IpcServer
-from ui.point_picker import pick_point
+from autotools_shared.overlay.point_picker import pick_point
 from ui.click_point_row import ClickPointRow
 from ui.capture_row import CaptureRow
 from ui.color_clicker_tab import ColorClickerTab
