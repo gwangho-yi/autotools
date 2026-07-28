@@ -8,11 +8,10 @@ class IpcClient(QThread):
     connected = Signal()
     disconnected = Signal()
 
-    HOST = "127.0.0.1"
-    PORT = 54321
-
-    def __init__(self, parent=None):
+    def __init__(self, host: str = "127.0.0.1", port: int = 54321, parent=None):
         super().__init__(parent)
+        self.host = host
+        self.port = port
         self._running = False
         self._sock: socket.socket | None = None
         self._lock = threading.Lock()
@@ -38,7 +37,7 @@ class IpcClient(QThread):
     def run(self) -> None:
         self._running = True
         try:
-            with socket.create_connection((self.HOST, self.PORT), timeout=2.0) as s:
+            with socket.create_connection((self.host, self.port), timeout=2.0) as s:
                 s.settimeout(1.0)
                 with self._lock:
                     self._sock = s

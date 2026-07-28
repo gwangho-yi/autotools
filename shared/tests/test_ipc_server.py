@@ -4,7 +4,7 @@ import time
 
 
 def test_motion_signal_emitted(qtbot):
-    from core.ipc_server import IpcServer
+    from autotools_shared.ipc.server import IpcServer
 
     server = IpcServer()
     server.start()
@@ -23,7 +23,7 @@ def test_motion_signal_emitted(qtbot):
 
 
 def test_invalid_message_ignored(qtbot):
-    from core.ipc_server import IpcServer
+    from autotools_shared.ipc.server import IpcServer
 
     server = IpcServer()
     received = []
@@ -42,7 +42,7 @@ def test_invalid_message_ignored(qtbot):
 
 
 def test_color_match_signal_emitted(qtbot):
-    from core.ipc_server import IpcServer
+    from autotools_shared.ipc.server import IpcServer
 
     server = IpcServer()
     server.start()

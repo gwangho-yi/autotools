@@ -23,6 +23,7 @@ name = "auto-capture"
 version = "0.2.1"
 source = { virtual = "auto-capture" }
 dependencies = [
+    { name = "autotools-shared" },
     { name = "mss" },
     { name = "numpy" },
     { name = "pyinstaller" },
@@ -32,6 +33,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "autotools-shared", editable = "shared" },
     { name = "mss", specifier = ">=10.2.0" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "pyinstaller", specifier = ">=6.20.0" },

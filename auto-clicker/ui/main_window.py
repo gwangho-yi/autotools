@@ -38,7 +38,7 @@ from autotools_shared.alert import AlertRepeater
 from autotools_shared.models import ClickPoint
 from autotools_shared.click_engine import ClickEngine
 from autotools_shared.continuous_click_engine import ContinuousClickEngine
-from core.ipc_server import IpcServer
+from autotools_shared.ipc.server import IpcServer
 from ui.point_picker import pick_point
 from ui.click_point_row import ClickPointRow
 from ui.capture_row import CaptureRow
@@ -118,7 +118,7 @@ class MainWindow(QWidget):
         self._engine = ClickEngine()
         self._continuous: ContinuousClickEngine | None = None
         self._alert_repeater = AlertRepeater()
-        self._ipc = IpcServer(self)
+        self._ipc = IpcServer(parent=self)
         self._delay_timer: QTimer | None = None
         self._countdown_remaining: int = 0
         self._build_ui()

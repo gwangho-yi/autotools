@@ -12,17 +12,16 @@ class IpcServer(QThread):
     client_connected = Signal()
     client_disconnected = Signal()
 
-    PORT = 54321
-
-    def __init__(self, parent=None):
+    def __init__(self, port: int = 54321, parent=None):
         super().__init__(parent)
+        self.port = port
         self._running = False
         self._sock: socket.socket | None = None
 
     def _free_port(self) -> None:
         try:
             result = subprocess.run(
-                ["lsof", "-ti", f":{self.PORT}"],
+                ["lsof", "-ti", f":{self.port}"],
                 capture_output=True, text=True
             )
             for pid_str in result.stdout.strip().split():
@@ -39,10 +38,10 @@ class IpcServer(QThread):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            self._sock.bind(("127.0.0.1", self.PORT))
+            self._sock.bind(("127.0.0.1", self.port))
             self._sock.listen(1)
             self._sock.settimeout(1.0)
-            print(f"[IpcServer] listening on port {self.PORT}", flush=True)
+            print(f"[IpcServer] listening on port {self.port}", flush=True)
         except OSError as e:
             print(f"[IpcServer] bind failed: {e}", flush=True)
             self._running = False
