@@ -10,38 +10,15 @@ from PySide6.QtGui import QGuiApplication
 from pynput import keyboard
 
 
-def _spinbox_style() -> str:
-    base = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).parent.parent
-    up = (base / "assets" / "arrow-up.png").as_posix()
-    dn = (base / "assets" / "arrow-down.png").as_posix()
-    return f"""
-    QSpinBox {{
-        background-color: #2a2a4e; color: #cccccc;
-        border: 1px solid #3a3a6e; border-radius: 4px;
-        font-size: 13px; padding: 2px 4px;
-    }}
-    QSpinBox:disabled {{ color: #444466; border-color: #2a2a4e; }}
-    QSpinBox::up-button {{
-        width: 18px; subcontrol-origin: border; subcontrol-position: top right;
-        background-color: #3a3a6e; border-left: 1px solid #4a4a7e;
-    }}
-    QSpinBox::down-button {{
-        width: 18px; subcontrol-origin: border; subcontrol-position: bottom right;
-        background-color: #3a3a6e; border-left: 1px solid #4a4a7e;
-    }}
-    QSpinBox::up-button:hover, QSpinBox::down-button:hover {{ background-color: #4a4a8e; }}
-    QSpinBox::up-arrow {{ image: url("{up}"); width: 9px; height: 6px; }}
-    QSpinBox::down-arrow {{ image: url("{dn}"); width: 9px; height: 6px; }}
-    """
-
 from autotools_shared.alert import AlertRepeater
 from autotools_shared.models import ClickPoint
 from autotools_shared.click_engine import ClickEngine
 from autotools_shared.continuous_click_engine import ContinuousClickEngine
 from autotools_shared.ipc.server import IpcServer
 from autotools_shared.hotkey import HotkeyRelay
+from autotools_shared.spinbox_style import spinbox_style
+from autotools_shared.clickpoint_list import ClickPointRow
 from autotools_shared.overlay.point_picker import pick_point
-from ui.click_point_row import ClickPointRow
 from ui.capture_row import CaptureRow
 from ui.color_clicker_tab import ColorClickerTab
 
@@ -255,21 +232,21 @@ class MainWindow(QWidget):
         self._delay_h.setRange(0, 23)
         self._delay_h.setSuffix(" 시")
         self._delay_h.setFixedWidth(72)
-        self._delay_h.setStyleSheet(_spinbox_style())
+        self._delay_h.setStyleSheet(spinbox_style())
         delay_layout.addWidget(self._delay_h)
 
         self._delay_m = QSpinBox()
         self._delay_m.setRange(0, 59)
         self._delay_m.setSuffix(" 분")
         self._delay_m.setFixedWidth(72)
-        self._delay_m.setStyleSheet(_spinbox_style())
+        self._delay_m.setStyleSheet(spinbox_style())
         delay_layout.addWidget(self._delay_m)
 
         self._delay_s = QSpinBox()
         self._delay_s.setRange(0, 59)
         self._delay_s.setSuffix(" 초")
         self._delay_s.setFixedWidth(72)
-        self._delay_s.setStyleSheet(_spinbox_style())
+        self._delay_s.setStyleSheet(spinbox_style())
         delay_layout.addWidget(self._delay_s)
 
         delay_layout.addStretch()

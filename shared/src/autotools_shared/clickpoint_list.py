@@ -10,7 +10,7 @@ from autotools_shared.models import ClickPoint
 
 
 def _spin_style() -> str:
-    base = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).parent.parent
+    base = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).parent
     up = (base / "assets" / "arrow-up.png").as_posix()
     dn = (base / "assets" / "arrow-down.png").as_posix()
     return f"""

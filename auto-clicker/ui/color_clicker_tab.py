@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 
 from autotools_shared.overlay.point_picker import pick_point
-from ui.click_point_row import _spin_style  # 기존 스핀박스 스타일 재사용
+from autotools_shared.clickpoint_list import _spin_style  # 기존 스핀박스 스타일 재사용
 
 _BTN_PRIMARY = """
     QPushButton {
