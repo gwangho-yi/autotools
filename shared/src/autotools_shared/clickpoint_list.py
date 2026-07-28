@@ -2,11 +2,13 @@ import sys
 from pathlib import Path
 
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QLabel, QSpinBox, QPushButton, QRadioButton, QButtonGroup
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QPushButton,
+    QRadioButton, QButtonGroup, QScrollArea, QApplication
 )
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 
 from autotools_shared.models import ClickPoint
+from autotools_shared.overlay.point_picker import pick_point
 
 
 def _spin_style() -> str:
@@ -160,3 +162,113 @@ class ClickPointRow(QWidget):
             }
         """)
         self.setFixedHeight(48)
+
+
+_BTN_ADD = """
+    QPushButton {
+        background-color: #2a2a4e; color: #4ecca3;
+        border: 1px dashed #4ecca3; border-radius: 6px;
+        font-size: 13px; padding: 8px;
+    }
+    QPushButton:hover { background-color: #3a3a5e; }
+"""
+
+
+class ClickPointList(QWidget):
+    """클릭 포인트 목록 편집 위젯(헤더 + 스크롤 목록 + 포인트 추가 버튼).
+
+    포인트 추가/삭제 시 changed 시그널을 낸다. CaptureRow 등 목록 위/아래에 붙는
+    부가 행은 이 위젯이 관리하지 않으며, 번호 오프셋은 set_index_offset로 조정한다.
+    """
+    changed = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._rows: list[ClickPointRow] = []
+        self._index_offset = 0
+        self._build_ui()
+
+    def _build_ui(self) -> None:
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(10)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(8, 0, 8, 0)
+        for text, width in [("#", 26), ("위치", 108), ("딜레이 (h/m/s/ms)", 230), ("종류", 103)]:
+            lbl = QLabel(text)
+            lbl.setFixedWidth(width)
+            lbl.setStyleSheet("color: #444466; font-size: 11px;")
+            header.addWidget(lbl)
+        header.addStretch()
+        root.addLayout(header)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._list_container = QWidget()
+        self._list_container.setStyleSheet("background: transparent;")
+        self._list_layout = QVBoxLayout(self._list_container)
+        self._list_layout.setAlignment(Qt.AlignTop)
+        self._list_layout.setSpacing(4)
+        self._list_layout.setContentsMargins(0, 0, 0, 0)
+        scroll.setWidget(self._list_container)
+        root.addWidget(scroll, stretch=1)
+
+        self._add_btn = QPushButton("+ 포인트 추가")
+        self._add_btn.setStyleSheet(_BTN_ADD)
+        self._add_btn.clicked.connect(self._on_add_point)
+        root.addWidget(self._add_btn)
+
+    def set_index_offset(self, offset: int) -> None:
+        self._index_offset = offset
+        self._renumber()
+
+    def points(self) -> list[ClickPoint]:
+        return [r.point for r in self._rows]
+
+    def count(self) -> int:
+        return len(self._rows)
+
+    def _on_add_point(self) -> None:
+        win = self.window()
+        win.hide()
+        QApplication.processEvents()
+        result = pick_point()
+        win.show()
+        win.raise_()
+        win.activateWindow()
+        if result is None:
+            return
+        point = ClickPoint(x=result[0], y=result[1])
+        row = ClickPointRow(len(self._rows), point)
+        row.delete_requested.connect(self._on_delete_row)
+        row.pick_position_requested.connect(self._on_pick_position)
+        self._rows.append(row)
+        self._list_layout.addWidget(row)
+        self._renumber()
+        self.changed.emit()
+
+    def _on_pick_position(self, row: ClickPointRow) -> None:
+        win = self.window()
+        win.hide()
+        QApplication.processEvents()
+        result = pick_point()
+        win.show()
+        win.raise_()
+        win.activateWindow()
+        if result is None:
+            return
+        row.set_position(result[0], result[1])
+
+    def _on_delete_row(self, row: ClickPointRow) -> None:
+        self._rows.remove(row)
+        self._list_layout.removeWidget(row)
+        row.deleteLater()
+        self._renumber()
+        self.changed.emit()
+
+    def _renumber(self) -> None:
+        for i, r in enumerate(self._rows):
+            r.set_index(i + self._index_offset)
