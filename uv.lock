@@ -7,6 +7,7 @@ members = [
     "auto-capture",
     "auto-clicker",
     "autotools-shared",
+    "color-capture",
     "motion-capture",
 ]
 
@@ -89,6 +90,29 @@ dependencies = [
 requires-dist = [
     { name = "mss", specifier = ">=10.2.0" },
     { name = "numpy", specifier = ">=2.4.6" },
+    { name = "pynput", specifier = ">=1.7.7" },
+    { name = "pyside6", specifier = ">=6.11.1" },
+]
+
+[[package]]
+name = "color-capture"
+version = "0.1.0"
+source = { virtual = "apps/color-capture" }
+dependencies = [
+    { name = "autotools-shared" },
+    { name = "mss" },
+    { name = "numpy" },
+    { name = "pyinstaller" },
+    { name = "pynput" },
+    { name = "pyside6" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "autotools-shared", editable = "shared" },
+    { name = "mss", specifier = ">=10.2.0" },
+    { name = "numpy", specifier = ">=2.4.6" },
+    { name = "pyinstaller", specifier = ">=6.20.0" },
     { name = "pynput", specifier = ">=1.7.7" },
     { name = "pyside6", specifier = ">=6.11.1" },
 ]
