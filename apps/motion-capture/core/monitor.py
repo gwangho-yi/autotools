@@ -4,8 +4,10 @@ import numpy as np
 import mss
 from PySide6.QtCore import QThread, Signal
 
+from autotools_shared.detection import select_target
 
-INTERVAL = 0.5
+
+INTERVAL = 0.1
 PIXEL_DIFF = 25
 MIN_CHANGED = 15
 ALERT_COOLDOWN = 3.0
@@ -15,9 +17,10 @@ class MonitorThread(QThread):
     motion_detected = Signal(int, int)
     stopped = Signal()
 
-    def __init__(self, region, parent=None):
+    def __init__(self, region, priority=None, parent=None):
         super().__init__(parent)
         self.region = region
+        self.priority = priority if priority is not None else ["left", "top"]
         self._pause_event = threading.Event()
         self._pause_event.set()  # running by default
         self._needs_reset = False
@@ -60,14 +63,15 @@ class MonitorThread(QThread):
                 changed = int(np.count_nonzero(mask))
                 now = time.monotonic()
                 if changed > MIN_CHANGED and (now - last_alert) >= ALERT_COOLDOWN:
-                    ys, xs = np.where(mask)
-                    h_px, w_px = mask.shape
-                    fx = xs.mean() / w_px
-                    fy = ys.mean() / h_px
-                    cx = self.region["left"] + fx * self.region["width"]
-                    cy = self.region["top"] + fy * self.region["height"]
-                    self.motion_detected.emit(int(cx), int(cy))
-                    last_alert = now
+                    result = select_target(mask, self.priority)
+                    if result is not None:
+                        h_px, w_px = mask.shape
+                        fx = result[0] / w_px
+                        fy = result[1] / h_px
+                        cx = self.region["left"] + fx * self.region["width"]
+                        cy = self.region["top"] + fy * self.region["height"]
+                        self.motion_detected.emit(int(cx), int(cy))
+                        last_alert = now
                     prev = cur
                 else:
                     prev = cur

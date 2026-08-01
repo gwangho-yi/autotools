@@ -63,9 +63,10 @@ def main():
         if not regions:
             launcher.reset()
             return
+        priority = launcher.priority_selector.priority()
         threads = []
         for region in regions:
-            t = MonitorThread(region)
+            t = MonitorThread(region, priority)
             t.motion_detected.connect(on_motion)
             t.stopped.connect(on_stopped)
             t.start()

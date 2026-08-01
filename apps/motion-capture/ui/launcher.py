@@ -5,6 +5,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QGuiApplication, QPainter, QColor, QPen, QPixmap
 
+from autotools_shared.priority_selector import PrioritySelector
+
 
 def make_icon_pixmap(size: int) -> QPixmap:
     px = QPixmap(size, size)
@@ -105,7 +107,7 @@ class Launcher(QWidget):
 
     def _build_ui(self):
         self.setWindowTitle("motion-capture")
-        self.setFixedSize(460, 340)
+        self.setFixedSize(460, 380)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         outer = QVBoxLayout(self)
@@ -146,6 +148,9 @@ class Launcher(QWidget):
         subtitle.setWordWrap(True)
         subtitle.setStyleSheet("color: #888888; font-size: 12px;")
         layout.addWidget(subtitle)
+
+        self.priority_selector = PrioritySelector()
+        layout.addWidget(self.priority_selector)
 
         layout.addStretch()
 
