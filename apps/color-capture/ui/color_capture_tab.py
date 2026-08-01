@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, Signal
 
 from autotools_shared.overlay.color_picker import pick_pixel_color
 from autotools_shared.overlay.region_select import select_regions
+from autotools_shared.priority_selector import PrioritySelector
 
 _BTN_GREEN = """
     QPushButton {
@@ -115,6 +116,9 @@ class ColorCaptureTab(QWidget):
         tol_row.addStretch()
         layout.addLayout(tol_row)
 
+        self.priority_selector = PrioritySelector()
+        layout.addWidget(self.priority_selector)
+
         layout.addStretch()
 
         # 시작/일시정지/정지 스택 (launcher.py의 _build_capture_page와 동일한 패턴)
@@ -218,3 +222,6 @@ class ColorCaptureTab(QWidget):
 
     def set_status(self, text: str) -> None:
         self._status_label.setText(text)
+
+    def priority(self):
+        return self.priority_selector.priority()

@@ -58,9 +58,10 @@ def main():
         nonlocal color_threads
         if any(t.isRunning() for t in color_threads):
             return
+        priority = window.color_tab.priority()
         threads = []
         for region in regions:
-            t = ColorMonitorThread(region, target_rgb, tolerance)
+            t = ColorMonitorThread(region, target_rgb, tolerance, priority)
             t.color_detected.connect(on_color_detected)
             t.stopped.connect(on_color_stopped)
             t.start()
