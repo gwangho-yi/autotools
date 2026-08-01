@@ -16,16 +16,8 @@ __pycache__/
 dist/
 build/
 *.spec
-!auto-capture/auto-capture.spec
-!auto-capture/auto-capture-windows.spec
-!auto-capture/auto-capture-windows-x64.spec
-!auto-capture/auto-capture-windows-debug.spec
-!auto-clicker/auto-clicker.spec
-!auto-clicker/auto-clicker-windows.spec
-!auto-clicker/auto-clicker-windows-x64.spec
 !apps/motion-capture/motion-capture-windows-x64.spec
 !apps/color-capture/color-capture-windows-x64.spec
 !apps/motion-clicker/motion-clicker-windows-x64.spec
 !apps/color-clicker/color-clicker-windows-x64.spec
 assets/icon.iconset/
-auto-clicker/assets/icon.iconset/

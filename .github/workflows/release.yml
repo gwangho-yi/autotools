@@ -46,30 +46,42 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
-      - name: Build auto-clicker
-        working-directory: auto-clicker
+      - name: Build motion-capture
+        working-directory: apps/motion-capture
         run: |
           uv sync
-          uv add pyinstaller pynput
           uv run python scripts/make_icon.py
-          uv run python scripts/make_sound.py
-          uv run pyinstaller auto-clicker-windows-x64.spec --clean --noconfirm
+          uv run pyinstaller motion-capture-windows-x64.spec --clean --noconfirm
 
-      - name: Build auto-capture
-        working-directory: auto-capture
+      - name: Build color-capture
+        working-directory: apps/color-capture
         run: |
           uv sync
-          uv add pyinstaller pynput
           uv run python scripts/make_icon.py
-          uv run python scripts/make_sound.py
-          uv run pyinstaller auto-capture-windows-x64.spec --clean --noconfirm
+          uv run pyinstaller color-capture-windows-x64.spec --clean --noconfirm
+
+      - name: Build motion-clicker
+        working-directory: apps/motion-clicker
+        run: |
+          uv sync
+          uv run python scripts/make_icon.py
+          uv run pyinstaller motion-clicker-windows-x64.spec --clean --noconfirm
+
+      - name: Build color-clicker
+        working-directory: apps/color-clicker
+        run: |
+          uv sync
+          uv run python scripts/make_icon.py
+          uv run pyinstaller color-clicker-windows-x64.spec --clean --noconfirm
 
       - name: Rename with version
         shell: bash
         run: |
           TAG="${{ steps.ver.outputs.tag }}"
-          cp auto-clicker/dist/auto-clicker.exe "auto-clicker-${TAG}.exe"
-          cp auto-capture/dist/auto-capture.exe "auto-capture-${TAG}.exe"
+          cp apps/motion-capture/dist/motion-capture.exe "motion-capture-${TAG}.exe"
+          cp apps/color-capture/dist/color-capture.exe "color-capture-${TAG}.exe"
+          cp apps/motion-clicker/dist/motion-clicker.exe "motion-clicker-${TAG}.exe"
+          cp apps/color-clicker/dist/color-clicker.exe "color-clicker-${TAG}.exe"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -78,5 +90,7 @@ jobs:
           name: ${{ steps.ver.outputs.title }}
           generate_release_notes: true
           files: |
-            auto-clicker-${{ steps.ver.outputs.tag }}.exe
-            auto-capture-${{ steps.ver.outputs.tag }}.exe
+            motion-capture-${{ steps.ver.outputs.tag }}.exe
+            color-capture-${{ steps.ver.outputs.tag }}.exe
+            motion-clicker-${{ steps.ver.outputs.tag }}.exe
+            color-clicker-${{ steps.ver.outputs.tag }}.exe

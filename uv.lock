@@ -4,8 +4,6 @@ requires-python = ">=3.14"
 
 [manifest]
 members = [
-    "auto-capture",
-    "auto-clicker",
     "autotools-shared",
     "color-capture",
     "color-clicker",
@@ -21,61 +19,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/7e/f8/97fdf103f38fed679
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a9/ba/000a1996d4308bc65120167c21241a3b205464a2e0b58deda26ae8ac21d1/altgraph-0.17.5-py2.py3-none-any.whl", hash = "sha256:f3a22400bce1b0c701683820ac4f3b159cd301acab067c51c653e06961600597", size = 21228, upload-time = "2025-11-21T20:35:49.444Z" },
 ]
-
-[[package]]
-name = "auto-capture"
-version = "0.2.1"
-source = { virtual = "auto-capture" }
-dependencies = [
-    { name = "autotools-shared" },
-    { name = "mss" },
-    { name = "numpy" },
-    { name = "pyinstaller" },
-    { name = "pynput" },
-    { name = "pyside6" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "autotools-shared", editable = "shared" },
-    { name = "mss", specifier = ">=10.2.0" },
-    { name = "numpy", specifier = ">=2.4.6" },
-    { name = "pyinstaller", specifier = ">=6.20.0" },
-    { name = "pynput", specifier = ">=1.7.7" },
-    { name = "pyside6", specifier = ">=6.11.1" },
-]
-
-[[package]]
-name = "auto-clicker"
-version = "0.2.1"
-source = { virtual = "auto-clicker" }
-dependencies = [
-    { name = "autotools-shared" },
-    { name = "pyinstaller" },
-    { name = "pynput" },
-    { name = "pyside6" },
-]
-
-[package.optional-dependencies]
-build = [
-    { name = "pyinstaller" },
-]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-qt" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "autotools-shared", editable = "shared" },
-    { name = "pyinstaller", specifier = ">=6.20.0" },
-    { name = "pyinstaller", marker = "extra == 'build'", specifier = ">=6.20.0" },
-    { name = "pynput", specifier = ">=1.7.7" },
-    { name = "pyside6", specifier = ">=6.11.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest-qt", marker = "extra == 'dev'", specifier = ">=4.4.0" },
-]
-provides-extras = ["dev", "build"]
 
 [[package]]
 name = "autotools-shared"

@@ -1,5 +1,5 @@
 [tool.uv.workspace]
-members = ["shared", "apps/motion-capture", "apps/color-capture", "apps/motion-clicker", "apps/color-clicker", "auto-capture", "auto-clicker"]
+members = ["shared", "apps/motion-capture", "apps/color-capture", "apps/motion-clicker", "apps/color-clicker"]
 
 [tool.uv.sources]
 autotools_shared = { workspace = true }
