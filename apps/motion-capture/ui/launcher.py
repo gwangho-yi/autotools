@@ -136,7 +136,7 @@ class Launcher(QWidget):
         icon_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(icon_label)
 
-        title = QLabel("auto-capture")
+        title = QLabel("motion-capture")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("color: white; font-size: 24px; font-weight: bold;")
         layout.addWidget(title)
