@@ -21,4 +21,5 @@ build/
 !apps/color-capture/diagnose-windows-x64.spec
 !apps/motion-clicker/motion-clicker-windows-x64.spec
 !apps/color-clicker/color-clicker-windows-x64.spec
+!apps/color-clicker/verify-mouse-hook-windows-x64.spec
 assets/icon.iconset/
