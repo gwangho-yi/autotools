@@ -48,8 +48,8 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("color-clicker")
-        self.setMinimumSize(480, 610)
-        self.resize(480, 700)
+        self.setMinimumSize(480, 835)
+        self.resize(480, 850)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         root = QVBoxLayout(self)
@@ -119,16 +119,15 @@ class MainWindow(QWidget):
         )
 
     def _on_color_start(self) -> None:
-        if self.color_tab.point is None:
+        if not self.color_tab.points:
             return
         if self._engine.isRunning():
             return
         if self._continuous is not None and self._continuous.isRunning():
             return
-        x, y = self.color_tab.point
         self._continuous = ContinuousClickEngine(
-            x, y, self.color_tab.min_ms, self.color_tab.max_ms,
-            self.color_tab.click_type,
+            self.color_tab.points, self.color_tab.min_ms, self.color_tab.max_ms,
+            self.color_tab.click_type, loop=self.color_tab.loop,
         )
         self._continuous.start()
         self.color_tab.set_running(True)
@@ -157,7 +156,7 @@ class MainWindow(QWidget):
             return
         if self._continuous is not None and self._continuous.isRunning():
             self._on_color_stop()
-        elif self.color_tab.point is not None:
+        elif self.color_tab.points:
             self._on_color_start()
 
     def _on_volume_changed(self, value: int) -> None:
