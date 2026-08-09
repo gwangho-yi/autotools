@@ -111,6 +111,7 @@ class ClickPointRow(QWidget):
         self._pos_btn.setStyleSheet(_BTN_STYLE.format(color="#4ecca3", border="#4ecca3"))
         self._pos_btn.clicked.connect(lambda: self.pick_position_requested.emit(self))
         layout.addWidget(self._pos_btn)
+        layout.addSpacing(18)   # 위치 ↔ 딜레이 간격
 
         self._ms_spin = QSpinBox()
         self._ms_spin.setRange(0, 10000)
@@ -120,6 +121,7 @@ class ClickPointRow(QWidget):
         self._ms_spin.setFixedWidth(90)
         self._ms_spin.setStyleSheet(_spin_style())
         layout.addWidget(self._ms_spin)
+        layout.addSpacing(18)   # 딜레이 ↔ 종류 간격
 
         self._type_group = QButtonGroup(self)
         default_idx = next(
