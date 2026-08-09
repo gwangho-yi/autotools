@@ -86,8 +86,8 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("motion-clicker")
-        self.setMinimumSize(480, 640)
-        self.resize(480, 640)
+        self.setMinimumSize(480, 440)
+        self.resize(480, 520)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         root = QVBoxLayout(self)
@@ -106,7 +106,7 @@ class MainWindow(QWidget):
         # 공유 클릭 포인트 목록 위젯
         self._list = ClickPointList()
         self._list.changed.connect(self._update_action_btn)
-        root.addWidget(self._list, stretch=1)
+        root.addWidget(self._list)
 
         # 순서 클릭 컨트롤(시작 지연 + 시작 버튼 + 상태)
         root.addWidget(self._build_clicker_page())
@@ -144,6 +144,7 @@ class MainWindow(QWidget):
         self._vol_pct_label.setFixedWidth(36)
         vol_row.addWidget(self._vol_pct_label)
         root.addLayout(vol_row)
+        root.addStretch()
 
     def _build_clicker_page(self) -> QWidget:
         page = QWidget()

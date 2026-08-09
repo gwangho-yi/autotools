@@ -48,8 +48,8 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("color-clicker")
-        self.setMinimumSize(480, 640)
-        self.resize(480, 640)
+        self.setMinimumSize(480, 500)
+        self.resize(480, 590)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         root = QVBoxLayout(self)
@@ -67,7 +67,7 @@ class MainWindow(QWidget):
 
         # 공유 클릭 포인트 목록 위젯
         self._list = ClickPointList()
-        root.addWidget(self._list, stretch=1)
+        root.addWidget(self._list)
 
         # 컬러 클릭 컨트롤(연속 클릭 지점 + min/max + 시작/중지)
         self.color_tab = ColorClickerTab()
@@ -106,6 +106,7 @@ class MainWindow(QWidget):
         self._vol_pct_label.setFixedWidth(36)
         vol_row.addWidget(self._vol_pct_label)
         root.addLayout(vol_row)
+        root.addStretch()
 
     def _center(self) -> None:
         screen = QGuiApplication.primaryScreen()
