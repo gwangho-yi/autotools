@@ -1,13 +1,17 @@
 """감지점 선택 우선순위 위젯(왼쪽/오른쪽/위/아래/랜덤).
 
-방향 버튼은 누른 순서가 우선순위(1순위, 2순위)가 된다. 같은 축(가로 left/right,
-세로 top/bottom)의 반대쪽을 누르면 그 자리를 교체한다. 랜덤은 방향 선택과 상호배타.
-priority()는 select_target에 넘길 값을 반환한다: "random" 또는 방향 리스트.
+방향 버튼을 누르면 버튼 행 아래 배지 영역에 순서대로 배지(①②)가 추가된다. 같은 버튼을
+다시 누르면 그 배지가 제거되고 남은 순번이 다시 매겨진다. 같은 축(가로 left/right,
+세로 top/bottom)은 하나만 유지되며, 반대쪽을 누르면 그 자리를 교체한다(순번 유지, 최대 2개).
+랜덤은 방향 선택과 상호배타(랜덤을 누르면 방향 배지가 모두 지워지고, 방향을 누르면 랜덤 해제).
+배지가 없고 랜덤도 아니면 기본값(위→왼쪽)으로 동작한다.
+priority()는 select_target에 넘길 값을 반환한다: "random" 또는 방향 리스트(1순위부터).
 """
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from PySide6.QtCore import Signal
 
 _DIRS = [("left", "왼쪽"), ("right", "오른쪽"), ("top", "위"), ("bottom", "아래")]
+_LABELS = dict(_DIRS)
 _BADGE = ["①", "②"]
 
 _BTN_STYLE = """
@@ -40,7 +44,11 @@ class PrioritySelector(QWidget):
         self._refresh()
 
     def _build_ui(self) -> None:
-        row = QHBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(4)
+
+        row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(6)
         lbl = QLabel("우선순위:")
@@ -60,19 +68,28 @@ class PrioritySelector(QWidget):
         self._btns["random"] = rb
         row.addWidget(rb)
         row.addStretch()
+        outer.addLayout(row)
+
+        # 버튼 아래 배지 영역(순서대로 표시)
+        self._badge_label = QLabel()
+        self._badge_label.setStyleSheet("color: #4ecca3; font-size: 12px;")
+        outer.addWidget(self._badge_label)
 
     def _on_dir(self, key: str) -> None:
         self._random = False
-        axis = _axis(key)
-        replaced = False
-        for i, d in enumerate(self._order):
-            if _axis(d) == axis:
-                self._order[i] = key   # 같은 축이면 교체(순위 유지)
-                replaced = True
-                break
-        if not replaced:
-            self._order.append(key)
-            self._order = self._order[:2]  # 축은 최대 2개
+        if key in self._order:
+            self._order.remove(key)            # 다시 누르면 제거
+        else:
+            axis = _axis(key)
+            replaced = False
+            for i, d in enumerate(self._order):
+                if _axis(d) == axis:
+                    self._order[i] = key       # 같은 축이면 교체(순번 유지)
+                    replaced = True
+                    break
+            if not replaced:
+                self._order.append(key)
+                self._order = self._order[:2]  # 축은 최대 2개
         self._refresh()
         self.changed.emit()
 
@@ -83,16 +100,16 @@ class PrioritySelector(QWidget):
         self.changed.emit()
 
     def _refresh(self) -> None:
-        for key, text in _DIRS:
-            b = self._btns[key]
-            if key in self._order:
-                idx = self._order.index(key)
-                b.setChecked(True)
-                b.setText(f"{text} {_BADGE[idx]}")
-            else:
-                b.setChecked(False)
-                b.setText(text)
+        for key, _text in _DIRS:
+            self._btns[key].setChecked(key in self._order)
         self._btns["random"].setChecked(self._random)
+        if self._random:
+            self._badge_label.setText("선택: 랜덤")
+        elif self._order:
+            parts = [f"{_BADGE[i]} {_LABELS[d]}" for i, d in enumerate(self._order)]
+            self._badge_label.setText("선택:  " + "   ".join(parts))
+        else:
+            self._badge_label.setText("선택: 기본(위 → 왼쪽)")
 
     def priority(self):
         """select_target에 넘길 값. "random" 또는 방향 리스트(1순위부터)."""

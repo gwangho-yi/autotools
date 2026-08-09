@@ -65,7 +65,7 @@ class ColorCaptureWindow(QWidget):
 
     def _build_ui(self):
         self.setWindowTitle("color-capture")
-        self.setFixedSize(460, 380)
+        self.setFixedSize(460, 410)
         self.setStyleSheet("background-color: #1a1a2e;")
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 12)
