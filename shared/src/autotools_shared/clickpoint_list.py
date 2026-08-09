@@ -83,9 +83,6 @@ class ClickPointRow(QWidget):
 
     @property
     def point(self) -> ClickPoint:
-        self._point.hours = self._h_spin.value()
-        self._point.minutes = self._m_spin.value()
-        self._point.seconds = self._s_spin.value()
         self._point.ms = self._ms_spin.value()
         checked_id = self._type_group.checkedId()
         self._point.click_type = _CLICK_TYPES[checked_id][1] if checked_id >= 0 else "left"
@@ -115,23 +112,14 @@ class ClickPointRow(QWidget):
         self._pos_btn.clicked.connect(lambda: self.pick_position_requested.emit(self))
         layout.addWidget(self._pos_btn)
 
-        for attr, label_text, max_val, init_val in [
-            ("_h_spin",  "h",  23,  self._point.hours),
-            ("_m_spin",  "m",  59,  self._point.minutes),
-            ("_s_spin",  "s",  59,  self._point.seconds),
-            ("_ms_spin", "ms", 999, self._point.ms),
-        ]:
-            spin = QSpinBox()
-            spin.setRange(0, max_val)
-            spin.setValue(init_val)
-            spin.setFixedWidth(52)
-            spin.setStyleSheet(_spin_style())
-            lbl = QLabel(label_text)
-            lbl.setStyleSheet("color: #666666; font-size: 11px;")
-            lbl.setFixedWidth(16)
-            layout.addWidget(spin)
-            layout.addWidget(lbl)
-            setattr(self, attr, spin)
+        self._ms_spin = QSpinBox()
+        self._ms_spin.setRange(0, 10000)
+        self._ms_spin.setSingleStep(100)   # 위/아래 버튼 100ms 단위 증감
+        self._ms_spin.setValue(self._point.ms)
+        self._ms_spin.setSuffix(" ms")
+        self._ms_spin.setFixedWidth(90)
+        self._ms_spin.setStyleSheet(_spin_style())
+        layout.addWidget(self._ms_spin)
 
         self._type_group = QButtonGroup(self)
         default_idx = next(
@@ -195,7 +183,7 @@ class ClickPointList(QWidget):
 
         header = QHBoxLayout()
         header.setContentsMargins(8, 0, 8, 0)
-        for text, width in [("#", 26), ("위치", 108), ("딜레이 (h/m/s/ms)", 230), ("종류", 103)]:
+        for text, width in [("#", 26), ("위치", 108), ("딜레이 (ms)", 230), ("종류", 103)]:
             lbl = QLabel(text)
             lbl.setFixedWidth(width)
             lbl.setStyleSheet("color: #444466; font-size: 11px;")
