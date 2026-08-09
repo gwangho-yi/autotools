@@ -53,7 +53,7 @@ class MainWindow(QWidget):
 
         root = QVBoxLayout(self)
         root.setSpacing(10)
-        root.setContentsMargins(20, 20, 20, 16)
+        root.setContentsMargins(10, 20, 10, 16)
 
         # Header
         title = QLabel("color-clicker")
