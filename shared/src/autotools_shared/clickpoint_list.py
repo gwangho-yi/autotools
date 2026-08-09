@@ -98,7 +98,7 @@ class ClickPointRow(QWidget):
 
     def _build_ui(self, index: int) -> None:
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setContentsMargins(8, 3, 8, 3)
         layout.setSpacing(6)
 
         self._num_label = QLabel(str(index + 1))
@@ -151,7 +151,7 @@ class ClickPointRow(QWidget):
                 border-radius: 6px;
             }
         """)
-        self.setFixedHeight(48)
+        self.setFixedHeight(40)
 
 
 _BTN_ADD = """
@@ -204,7 +204,7 @@ class ClickPointList(QWidget):
         self._list_layout.setSpacing(4)
         self._list_layout.setContentsMargins(0, 0, 0, 0)
         scroll.setWidget(self._list_container)
-        scroll.setFixedHeight(260)   # 포인트 목록 영역 고정 높이(약 5행 후 스크롤)
+        scroll.setFixedHeight(220)   # 고정 높이 — 5행(40*5 + spacing 4*4 = 216) 후 스크롤
         root.addWidget(scroll)
 
         self._add_btn = QPushButton("+ 포인트 추가")

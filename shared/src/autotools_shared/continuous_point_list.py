@@ -123,7 +123,7 @@ class ContinuousPointList(QWidget):
         self._list_layout.setSpacing(4)
         self._list_layout.setContentsMargins(0, 0, 0, 0)
         scroll.setWidget(self._list_container)
-        scroll.setFixedHeight(140)   # 약 3행 후 스크롤
+        scroll.setFixedHeight(200)   # 고정 높이 — 약 5행(36*5 + spacing 4*4 = 196) 후 스크롤
         root.addWidget(scroll)
 
         self._add_btn = QPushButton("+ 연속 클릭 지점 추가")

@@ -86,8 +86,8 @@ class MainWindow(QWidget):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("motion-clicker")
-        self.setMinimumSize(480, 550)
-        self.resize(480, 630)
+        self.setMinimumSize(480, 536)
+        self.resize(480, 560)
         self.setStyleSheet("background-color: #1a1a2e;")
 
         root = QVBoxLayout(self)
