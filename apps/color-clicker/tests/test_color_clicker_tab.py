@@ -124,6 +124,33 @@ def test_min_max_defaults_and_start_signal(qtbot):
     assert tab.max_ms == 150
 
 
+def test_ms_spins_step_by_100(qtbot):
+    from ui.color_clicker_tab import ColorClickerTab
+
+    tab = ColorClickerTab()
+    qtbot.addWidget(tab)
+    assert tab._min_spin.singleStep() == 100
+    assert tab._max_spin.singleStep() == 100
+
+    tab._max_spin.setValue(200)
+    tab._max_spin.stepUp()
+    assert tab._max_spin.value() == 300
+    tab._max_spin.stepDown()
+    assert tab._max_spin.value() == 200
+
+
+def test_ms_spin_defaults_unchanged(qtbot):
+    """기본값은 100의 배수로 바꾸지 않는다(80 / 200 유지)."""
+    from ui.color_clicker_tab import ColorClickerTab
+
+    tab = ColorClickerTab()
+    qtbot.addWidget(tab)
+    assert tab.min_ms == 80
+    assert tab.max_ms == 200
+    assert tab._min_spin.minimum() == 1
+    assert tab._min_spin.maximum() == 10000
+
+
 def test_typing_min_greater_than_max_is_not_blocked(qtbot):
     """입력 도중에는 값을 강제로 건드리거나 막지 않아야 한다(시작 시점에만 검사)."""
     from ui.color_clicker_tab import ColorClickerTab

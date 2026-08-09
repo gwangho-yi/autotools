@@ -99,6 +99,7 @@ class ColorClickerTab(QWidget):
         ms_row.addWidget(min_lbl)
         self._min_spin = QSpinBox()
         self._min_spin.setRange(1, 10000)
+        self._min_spin.setSingleStep(100)   # 위/아래 버튼 100ms 단위 증감
         self._min_spin.setValue(80)
         self._min_spin.setSuffix(" ms")
         self._min_spin.setFixedWidth(90)
@@ -109,6 +110,7 @@ class ColorClickerTab(QWidget):
         ms_row.addWidget(max_lbl)
         self._max_spin = QSpinBox()
         self._max_spin.setRange(1, 10000)
+        self._max_spin.setSingleStep(100)   # 위/아래 버튼 100ms 단위 증감
         self._max_spin.setValue(200)
         self._max_spin.setSuffix(" ms")
         self._max_spin.setFixedWidth(90)
