@@ -204,7 +204,7 @@ class ClickPointList(QWidget):
         self._list_layout.setSpacing(4)
         self._list_layout.setContentsMargins(0, 0, 0, 0)
         scroll.setWidget(self._list_container)
-        scroll.setFixedHeight(150)   # 포인트 목록 영역 고정 높이(약 3행 후 스크롤)
+        scroll.setFixedHeight(260)   # 포인트 목록 영역 고정 높이(약 5행 후 스크롤)
         root.addWidget(scroll)
 
         self._add_btn = QPushButton("+ 포인트 추가")
