@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSlider
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
@@ -11,7 +11,9 @@ from autotools_shared.continuous_click_engine import ContinuousClickEngine
 from autotools_shared.ipc.server import IpcServer
 from autotools_shared.hotkey import HotkeyRelay
 from autotools_shared.clickpoint_list import ClickPointList
+from ui.capture_row import CaptureRow
 from ui.color_clicker_tab import ColorClickerTab
+from ui.volume_control import VolumeControl
 
 _BTN_MUTE = """
     QPushButton {
@@ -29,6 +31,7 @@ class MainWindow(QWidget):
         super().__init__()
         self._engine = ClickEngine()
         self._continuous: ContinuousClickEngine | None = None
+        self._capture_row: CaptureRow | None = None
         self._alert_repeater = AlertRepeater()
         self._ipc = IpcServer(port=54322, parent=self)
         self._build_ui()
@@ -39,6 +42,12 @@ class MainWindow(QWidget):
         self.color_tab.stop_requested.connect(self._on_color_stop)
         self._ipc.color_match_received.connect(
             self._on_color_match, Qt.ConnectionType.QueuedConnection
+        )
+        self._ipc.client_connected.connect(
+            self._on_client_connected, Qt.ConnectionType.QueuedConnection
+        )
+        self._ipc.client_disconnected.connect(
+            self._on_client_disconnected, Qt.ConnectionType.QueuedConnection
         )
         self._ipc.start()
         self._f6_relay = HotkeyRelay(self._on_f6_toggle)
@@ -83,29 +92,9 @@ class MainWindow(QWidget):
         mute_row.addStretch()
         root.addLayout(mute_row)
 
-        vol_row = QHBoxLayout()
-        vol_label = QLabel("볼륨:")
-        vol_label.setStyleSheet("color: #aaaaaa; font-size: 12px;")
-        vol_label.setFixedWidth(36)
-        vol_row.addWidget(vol_label)
-        self._vol_slider = QSlider(Qt.Horizontal)
-        self._vol_slider.setRange(0, 100)
-        self._vol_slider.setValue(100)
-        self._vol_slider.setStyleSheet("""
-            QSlider::groove:horizontal { height: 4px; background: #2a2a4e; border-radius: 2px; }
-            QSlider::sub-page:horizontal { background: #4ecca3; border-radius: 2px; }
-            QSlider::handle:horizontal {
-                width: 12px; height: 12px; margin: -4px 0;
-                background: #4ecca3; border-radius: 6px;
-            }
-        """)
-        self._vol_slider.valueChanged.connect(self._on_volume_changed)
-        vol_row.addWidget(self._vol_slider)
-        self._vol_pct_label = QLabel("100%")
-        self._vol_pct_label.setStyleSheet("color: #aaaaaa; font-size: 12px;")
-        self._vol_pct_label.setFixedWidth(36)
-        vol_row.addWidget(self._vol_pct_label)
-        root.addLayout(vol_row)
+        self._volume = VolumeControl()
+        self._volume.volume_changed.connect(self._on_volume_changed)
+        root.addWidget(self._volume)
         root.addStretch()
 
     def _center(self) -> None:
@@ -147,9 +136,35 @@ class MainWindow(QWidget):
         if self._continuous is not None and self._continuous.isRunning():
             self._continuous.stop()
         self.color_tab.set_running(False)
+        click_type = self._capture_row.click_type if self._capture_row else "left"
         self._engine.set_points(self._list.points())
-        self._engine.start_from_color(x, y, self.color_tab.click_type)
+        self._engine.start_from_color(x, y, click_type)
         self.color_tab.set_status(f"감지 ({x}, {y}) → 클릭 시퀀스 실행 중...")
+
+    def _on_client_connected(self) -> None:
+        if self._capture_row is not None:
+            return
+        row = CaptureRow()
+        self._capture_row = row
+        self._list.set_index_offset(1)
+        # 리스트 위젯 바로 위에 삽입
+        layout = self.layout()
+        idx = layout.indexOf(self._list)
+        layout.insertWidget(idx, row)
+        row.show()
+        self.color_tab.set_status("color-capture 연결됨 — 감지 대기 중...")
+
+    def _on_client_disconnected(self) -> None:
+        if self._capture_row is None:
+            return
+        self.layout().removeWidget(self._capture_row)
+        self._capture_row.deleteLater()
+        self._capture_row = None
+        self._list.set_index_offset(0)
+        if not self._engine.isRunning() and not (
+            self._continuous is not None and self._continuous.isRunning()
+        ):
+            self.color_tab.set_status("")
 
     def _on_f6_toggle(self) -> None:
         if self._engine.isRunning():
@@ -160,7 +175,6 @@ class MainWindow(QWidget):
             self._on_color_start()
 
     def _on_volume_changed(self, value: int) -> None:
-        self._vol_pct_label.setText(f"{value}%")
         self._alert_repeater.volume = value / 100
 
     def _on_mute_clicked(self) -> None:

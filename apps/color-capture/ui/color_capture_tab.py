@@ -214,6 +214,7 @@ class ColorCaptureTab(QWidget):
         self._btn_stack.setCurrentIndex(1 if active else 0)
         self._pick_color_btn.setEnabled(not active)
         self._tolerance.setEnabled(not active)
+        self.priority_selector.setEnabled(not active)
         if not active:
             self._refresh_start_enabled()
 
